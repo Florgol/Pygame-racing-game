@@ -18,9 +18,9 @@ background_image = pygame.transform.scale(background_image, (950, 600))  # Verkl
 bg_x = 0
 
 # Spielfigur-Eigenschaften
-player_image = pygame.image.load("car.png")  # Passe den Pfad zur Spielfigur an
+player_image = pygame.image.load("car2.png")  # Passe den Pfad zur Spielfigur an
 player_image = pygame.transform.scale(player_image, (50, 100))  # Verkleinere die Spielfigur
-player_image = pygame.transform.rotate(player_image, -90)  # Drehe die Spielfigur um 90 Grad nach rechts
+player_image = pygame.transform.rotate(player_image, 90)  # Drehe die Spielfigur um 90 Grad nach links
 player_rect = player_image.get_rect()
 player_rect.centerx = WIDTH // 4  # Ändere die Position auf der X-Achse
 player_rect.centery = HEIGHT // 2   # Ändere die Position auf der Y-Achse
