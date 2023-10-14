@@ -10,7 +10,7 @@ WIDTH, HEIGHT = 800, 600
 BG_COLOR = (0, 0, 0)
 
 # Laden des Hintergrundbilds
-background_image = pygame.image.load("background.png")
+background_image = pygame.image.load("background2_1.png")
 background_image = pygame.transform.rotate(background_image, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
 background_image = pygame.transform.scale(background_image, (950, 600))  # Verkleinere die Hintergrunddatei
 
@@ -29,9 +29,9 @@ player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
 acceleration = 0.5  # Beschleunigung
 
 # Gegner-Auto-Eigenschaften
-enemy_image = pygame.image.load("enemy.png")  # Passe den Pfad zum gegnerischen Auto an
+enemy_image = pygame.image.load("enemy2.png")  # Passe den Pfad zum gegnerischen Auto an
 enemy_image = pygame.transform.scale(enemy_image, (50, 100))  # Verkleinere das gegnerische Auto
-enemy_image = pygame.transform.rotate(enemy_image, -90)  # Drehe das gegnerische Auto um 90 Grad nach rechts
+enemy_image = pygame.transform.rotate(enemy_image, 90)  # Drehe das gegnerische Auto um 90 Grad nach links
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
 enemy_rect.centery = random.randint(50, HEIGHT - enemy_rect.height)
