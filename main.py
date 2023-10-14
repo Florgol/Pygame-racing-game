@@ -9,8 +9,12 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 BG_COLOR = (0, 0, 0)
 
+# Pygame-Fenster einrichten
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("ESA_3")
+
 # Laden des Hintergrundbilds
-background_image = pygame.image.load("background2_1.png")
+background_image = pygame.image.load("backgrounds/background4.png").convert()
 background_image = pygame.transform.rotate(background_image, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
 background_image = pygame.transform.scale(background_image, (950, 600))  # Verkleinere die Hintergrunddatei
 
@@ -18,7 +22,7 @@ background_image = pygame.transform.scale(background_image, (950, 600))  # Verkl
 bg_x = 0
 
 # Spielfigur-Eigenschaften
-player_image = pygame.image.load("car2.png")  # Passe den Pfad zur Spielfigur an
+player_image = pygame.image.load("car2.png").convert_alpha()  # Passe den Pfad zur Spielfigur an
 player_image = pygame.transform.scale(player_image, (50, 100))  # Verkleinere die Spielfigur
 player_image = pygame.transform.rotate(player_image, 90)  # Drehe die Spielfigur um 90 Grad nach links
 player_rect = player_image.get_rect()
@@ -29,25 +33,20 @@ player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
 acceleration = 0.5  # Beschleunigung
 
 # Gegner-Auto-Eigenschaften
-enemy_image = pygame.image.load("enemy2.png")  # Passe den Pfad zum gegnerischen Auto an
+enemy_image = pygame.image.load("enemy2.png").convert_alpha()  # Passe den Pfad zum gegnerischen Auto an
 enemy_image = pygame.transform.scale(enemy_image, (50, 100))  # Verkleinere das gegnerische Auto
 enemy_image = pygame.transform.rotate(enemy_image, 90)  # Drehe das gegnerische Auto um 90 Grad nach links
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
 enemy_rect.centery = random.randint(50, HEIGHT - enemy_rect.height)
-enemy_speed = 5
+enemy_speed = 3
 
-# Pygame-Fenster einrichten
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("ESA_3")
+
 
 clock = pygame.time.Clock()
 
 while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+
 
     # Bewegung des Spielers
     keys = pygame.key.get_pressed()
@@ -79,7 +78,7 @@ while True:
     enemy_rect.centerx -= enemy_speed
 
     # Bewegung des Hintergrundbilds
-    bg_x -= 8  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
+    bg_x -= 4  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
 
     # Wenn das Hintergrundbild aus dem Bildschirm verschwindet, setze es zurück
     if bg_x < -background_image.get_width():
@@ -111,5 +110,10 @@ while True:
         enemy_rect.centerx = WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         enemy_rect.centery = random.randint(50, HEIGHT - enemy_rect.height)
 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()    
+
     pygame.display.update()
-    clock.tick(60) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
+    clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
