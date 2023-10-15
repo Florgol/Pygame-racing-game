@@ -18,14 +18,30 @@ PLAYER_ACCELERATION = 0.5
 PLAYER_SPEED_MAX = 5
 PLAYER_SPEED_MIN = -5
 
+# Tracking game time
+start_time = pygame.time.get_ticks()
+
 # Pygame-Fenster einrichten
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("ESA_3")
 
 # Laden des Hintergrundbilds
-background_image = pygame.image.load("backgrounds/background_4.png").convert()
+background_image = pygame.image.load("backgrounds/background_2.png").convert()
 background_image = pygame.transform.rotate(background_image, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
 background_image = pygame.transform.scale(background_image, (950, 600))  # Verkleinere die Hintergrunddatei
+
+# Loading background transition images
+transition_images = [
+    pygame.transform.scale(
+        pygame.transform.rotate(
+            pygame.image.load(f"backgrounds\day_to_night_transition/background_2_day_to_night_{i}.png").convert(),
+            90
+        ),
+        (950, 600)
+    )
+    for i in range(1, 9)
+]
+
 
 # Initialisierung der Hintergrundposition
 bg_x = 0
