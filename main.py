@@ -18,8 +18,6 @@ PLAYER_ACCELERATION = 0.5
 PLAYER_SPEED_MAX = 5
 PLAYER_SPEED_MIN = -5
 
-
-
 # Pygame-Fenster einrichten
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("ESA_3")
