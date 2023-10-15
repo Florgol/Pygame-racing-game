@@ -9,12 +9,21 @@ pygame.init()
 WIDTH, HEIGHT = 800, 600
 BG_COLOR = (0, 0, 0)
 
+# Added constants to control game speed in one place - here
+# Player speed does not really need to be controlled with constant
+BACKGROUND_SPEED = 3
+ENEMY_SPEED = 2
+
+PLAYER_ACCELERATION = 0.5
+PLAYER_SPEED_MAX = 5
+PLAYER_SPEED_MIN = -5
+
 # Pygame-Fenster einrichten
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("ESA_3")
 
 # Laden des Hintergrundbilds
-background_image = pygame.image.load("backgrounds/background4.png").convert()
+background_image = pygame.image.load("backgrounds/background_4.png").convert()
 background_image = pygame.transform.rotate(background_image, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
 background_image = pygame.transform.scale(background_image, (950, 600))  # Verkleinere die Hintergrunddatei
 
@@ -30,7 +39,7 @@ player_rect.centerx = WIDTH // 4  # Ändere die Position auf der X-Achse
 player_rect.centery = HEIGHT // 2   # Ändere die Position auf der Y-Achse
 player_speed_x = 0  # Anfangsgeschwindigkeit in X-Richtung
 player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
-acceleration = 0.5  # Beschleunigung
+acceleration = PLAYER_ACCELERATION  # Beschleunigung
 
 # Gegner-Auto-Eigenschaften
 enemy_image = pygame.image.load("enemy2.png").convert_alpha()  # Passe den Pfad zum gegnerischen Auto an
@@ -39,7 +48,7 @@ enemy_image = pygame.transform.rotate(enemy_image, 90)  # Drehe das gegnerische 
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
 enemy_rect.centery = random.randint(50, HEIGHT - enemy_rect.height)
-enemy_speed = 3
+enemy_speed = ENEMY_SPEED
 
 
 
@@ -71,14 +80,14 @@ while True:
             player_speed_x += acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
 
     # Begrenze die Geschwindigkeit, um zu verhindern, dass sie zu groß wird
-    player_speed_y = max(-5, min(5, player_speed_y))
-    player_speed_x = max(-5, min(5, player_speed_x))
+    player_speed_y = max(PLAYER_SPEED_MIN, min(PLAYER_SPEED_MAX, player_speed_y))
+    player_speed_x = max(PLAYER_SPEED_MIN, min(PLAYER_SPEED_MAX, player_speed_x))
 
     # Bewegung des gegnerischen Autos
     enemy_rect.centerx -= enemy_speed
 
     # Bewegung des Hintergrundbilds
-    bg_x -= 4  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
+    bg_x -= BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
 
     # Wenn das Hintergrundbild aus dem Bildschirm verschwindet, setze es zurück
     if bg_x < -background_image.get_width():
