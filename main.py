@@ -6,11 +6,22 @@ import random
 pygame.init()
 
 # Fenstergröße und Farben
-WIDTH, HEIGHT = 800, 600
+WIDTH, HEIGHT = 1200, 800
 BG_COLOR = (0, 0, 0)
 
-# Added constants to control game speed in one place - here
-# Player speed does not really need to be controlled with constant
+# Background size
+BACKGROUND_WIDTH = 1600
+BACKGROUND_HEIGHT = 800
+
+# Player size
+PLAYER_WIDTH = 110
+PLAYER_HEIGHT = 55
+
+# Enemy sizes
+ENEMY_WIDTH_CAR = 110
+ENEMY_HEIGHT_CAR = 55
+
+# Added constants to control game speed in one place
 BACKGROUND_SPEED = 3
 ENEMY_SPEED = 2
 
@@ -28,7 +39,7 @@ pygame.display.set_caption("ESA_3")
 # Laden des Hintergrundbilds
 background_image = pygame.image.load("backgrounds/background_2.png").convert()
 background_image = pygame.transform.rotate(background_image, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
-background_image = pygame.transform.scale(background_image, (950, 600))  # Verkleinere die Hintergrunddatei
+background_image = pygame.transform.scale(background_image, (BACKGROUND_WIDTH, BACKGROUND_HEIGHT))  # Verkleinere die Hintergrunddatei
 
 # Loading background transition images
 transition_images = [
@@ -37,7 +48,7 @@ transition_images = [
             pygame.image.load(f"backgrounds\day_to_night_transition/background_2_day_to_night_{i}.png").convert(),
             90
         ),
-        (950, 600)
+        (BACKGROUND_WIDTH, BACKGROUND_HEIGHT)
     )
     for i in range(1, 9)
 ]
@@ -48,8 +59,8 @@ bg_x = 0
 
 # Spielfigur-Eigenschaften
 player_image = pygame.image.load("car2.png").convert_alpha()  # Passe den Pfad zur Spielfigur an
-player_image = pygame.transform.scale(player_image, (50, 100))  # Verkleinere die Spielfigur
 player_image = pygame.transform.rotate(player_image, 90)  # Drehe die Spielfigur um 90 Grad nach links
+player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))  # Verkleinere die Spielfigur
 player_rect = player_image.get_rect()
 player_rect.centerx = WIDTH // 4  # Ändere die Position auf der X-Achse
 player_rect.centery = HEIGHT // 2   # Ändere die Position auf der Y-Achse
@@ -59,8 +70,8 @@ acceleration = PLAYER_ACCELERATION  # Beschleunigung
 
 # Gegner-Auto-Eigenschaften
 enemy_image = pygame.image.load("enemy2.png").convert_alpha()  # Passe den Pfad zum gegnerischen Auto an
-enemy_image = pygame.transform.scale(enemy_image, (50, 100))  # Verkleinere das gegnerische Auto
 enemy_image = pygame.transform.rotate(enemy_image, 90)  # Drehe das gegnerische Auto um 90 Grad nach links
+enemy_image = pygame.transform.scale(enemy_image, (ENEMY_WIDTH_CAR, ENEMY_HEIGHT_CAR))  # Verkleinere das gegnerische Auto
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
 enemy_rect.centery = random.randint(50, HEIGHT - enemy_rect.height)
