@@ -51,8 +51,11 @@ pygame.display.set_caption("ESA_3")
 
 # Loading background transition images
 transition_images = [
+    # .. and scale backgrounds.
     pygame.transform.scale(
+        # .. rotate ..
         pygame.transform.rotate(
+            # Load, ..
             pygame.image.load(f"backgrounds\day_to_night_transition/background_2_day_to_night_{i}.png").convert(),
             90
         ),
@@ -60,6 +63,22 @@ transition_images = [
     )
     for i in range(1, 9)
 ]
+
+# Loading enemy car images
+enemy_images = [
+    # .. and scale enemy cars.
+    pygame.transform.scale(
+        # .. rotate
+        pygame.transform.rotate(
+            # Load, ..
+            pygame.image.load(f"enemies/enemy{i}.png").convert_alpha(),
+            90
+        ),
+        (ENEMY_WIDTH_CAR, ENEMY_HEIGHT_CAR)
+    )
+    for i in range(1, 5)  # We assume to have 4 enemy car pictures
+]
+
 
 # Default background
 current_background = transition_images[0]
@@ -79,9 +98,7 @@ player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
 acceleration = PLAYER_ACCELERATION  # Beschleunigung
 
 # Gegner-Auto-Eigenschaften
-enemy_image = pygame.image.load("enemy2.png").convert_alpha()  # Passe den Pfad zum gegnerischen Auto an
-enemy_image = pygame.transform.rotate(enemy_image, 90)  # Drehe das gegnerische Auto um 90 Grad nach links
-enemy_image = pygame.transform.scale(enemy_image, (ENEMY_WIDTH_CAR, ENEMY_HEIGHT_CAR))  # Verkleinere das gegnerische Auto
+enemy_image = random.choice(enemy_images)
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
 enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
@@ -154,6 +171,7 @@ while True:
     if enemy_rect.right < 0:
         enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
+        enemy_image = random.choice(enemy_images)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
