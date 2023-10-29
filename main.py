@@ -5,9 +5,11 @@ import random
 # Initialisierung von Pygame
 pygame.init()
 
-# Fenstergröße und Farben
+# Screen size and colors
 SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
 BG_COLOR = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
 
 # Background size
 BACKGROUND_WIDTH = 1600
@@ -48,6 +50,10 @@ pygame.display.set_caption("ESA_3")
 # current_background = pygame.image.load("backgrounds/background_2.png").convert()
 # current_background = pygame.transform.rotate(current_background, 90)  # Drehe den Hintergrund um 90 Grad nach rechts
 # current_background = pygame.transform.scale(current_background, (BACKGROUND_WIDTH, BACKGROUND_HEIGHT))  # Verkleinere die Hintergrunddatei
+
+# Loading start screen
+start_screen = pygame.image.load("start_screen3.png").convert()
+start_screen = pygame.transform.scale(start_screen, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Loading background transition images
 transition_images = [
@@ -104,11 +110,77 @@ enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf de
 enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
 enemy_speed = ENEMY_SPEED
 
-
+# Game clock
 clock = pygame.time.Clock()
 
-while True:
+# Defining a Button class to use buttons in the start screen and also the game screen
+# I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
+# - might need to take another look later
+class Button:
+    def __init__(self, x, y, text, font_size=80, font_color=(0, 0, 0), hover_color=(255, 255, 255)):
+        # Our own font
+        self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
+        self.text = text
+        self.hover_color = hover_color
+        self.initial_color = font_color
+        self.font_color = font_color
+        self.text_img = self.font.render(self.text, True, font_color)
+        self.rect = self.text_img.get_rect(center=(x, y))
 
+    def draw(self, surface):
+        if self.is_hovered(pygame.mouse.get_pos()):
+            self.font_color = self.hover_color
+        else:
+            self.font_color = self.initial_color
+
+        self.text_img = self.font.render(self.text, True, self.font_color)
+        surface.blit(self.text_img, self.rect)
+
+    def is_hovered(self, pos):
+        return self.rect.collidepoint(pos)
+
+    def is_clicked(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.is_hovered(pygame.mouse.get_pos()):
+                return True
+        return False
+
+
+# Instantiate buttons
+
+# Buttons for start screen
+start_button = Button(SCREEN_WIDTH // 2 + 110 , SCREEN_HEIGHT // 2 + 180, "START", font_size=90)
+quit_button_start_screen = Button(SCREEN_WIDTH // 2 - 2, SCREEN_HEIGHT // 2 + 28, "Quit", font_size=45)
+
+# Buttons for ingame
+quit_button = Button(50, 30, "Quit", font_size=40)
+
+
+# This is the start screen loop
+start_screen_running = True
+while start_screen_running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()  
+        # The start screen loop will terminate, when the start button is clicked - this will bring the player to the main game loop (follow code)
+        if start_button.is_clicked(event):
+            start_screen_running = False
+        # The window will be closed when the quit button is pressed
+        if quit_button_start_screen.is_clicked(event):
+            pygame.quit()  #
+            sys.exit()
+
+    # Drawing
+    screen.blit(start_screen, (0, 0))
+    start_button.draw(screen)
+    quit_button_start_screen.draw(screen)
+    pygame.display.update()
+
+
+# This is the main game loop
+game_is_running = True
+while game_is_running:
 
     # Bewegung des Spielers
     keys = pygame.key.get_pressed()
@@ -166,7 +238,6 @@ while True:
         pygame.quit()
         sys.exit()
 
-
     # Zurücksetzen des gegnerischen Autos
     if enemy_rect.right < 0:
         enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
@@ -176,7 +247,11 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-            sys.exit()    
+            sys.exit()
+        # Testing the button
+        if quit_button.is_clicked(event):
+            pygame.quit() 
+            sys.exit()
 
 
     # Keeping track of time
@@ -226,6 +301,8 @@ while True:
                 reverse_transition = False
 
     ##########################################################################################################################################
+
+    quit_button.draw(screen)
 
     pygame.display.update()
     clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
