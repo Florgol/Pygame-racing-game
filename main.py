@@ -43,7 +43,7 @@ transition_start_time = None
 reverse_transition = False
 
 # Pygame-Fenster einrichten
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("ESA_3")
 
 # Laden des Hintergrundbilds
