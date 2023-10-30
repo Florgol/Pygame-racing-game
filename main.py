@@ -12,7 +12,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 
 # Background size
-BACKGROUND_WIDTH = 1600
+BACKGROUND_WIDTH = 3200
 BACKGROUND_HEIGHT = 800
 
 # Player size
@@ -33,7 +33,24 @@ PLAYER_SPEED_MIN = -5
 
 # Night day transition
 NIGHT_DAY_CYCLE = 20000 # More milisecs, means longer day/night
-TRANSITION_SPEED = 5000 # Less milisecs, means faster transition
+TRANSITION_SPEED = 8000 # Less milisecs, means faster transition
+
+# Infos about the actual screen size of user
+info = pygame.display.Info()
+ACTUAL_SCREEN_WIDTH, ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
+is_fullscreen = False
+
+# Defining the scale factor for fullscreen scalling - I decided not to use this method, as it decreases the quality
+'''GAME_ASPECT_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
+SCREEN_ASPECT_RATIO = ACTUAL_SCREEN_WIDTH / ACTUAL_SCREEN_HEIGHT
+        
+if GAME_ASPECT_RATIO > SCREEN_ASPECT_RATIO:
+    scale_factor_fullscreen = ACTUAL_SCREEN_WIDTH / SCREEN_WIDTH
+else:
+    scale_factor_fullscreen = ACTUAL_SCREEN_HEIGHT / SCREEN_HEIGHT
+
+scale_factor_windowed = 1
+scale_factor = scale_factor_windowed'''
 
 # Tracking game time
 start_time = pygame.time.get_ticks()
@@ -42,9 +59,13 @@ start_time = pygame.time.get_ticks()
 transition_start_time = None
 reverse_transition = False
 
-# Pygame-Fenster einrichten
+# Initiate screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("ESA_3")
+
+# Initiate game surface - this works together with "screen" and "scale_factor" to switch between fullscreen and windowed
+game_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+
 
 # Laden des Hintergrundbilds
 # current_background = pygame.image.load("backgrounds/background_2.png").convert()
@@ -62,7 +83,7 @@ transition_images = [
         # .. rotate ..
         pygame.transform.rotate(
             # Load, ..
-            pygame.image.load(f"backgrounds\day_to_night_transition/background_2_day_to_night_{i}.png").convert(),
+            pygame.image.load(f"backgrounds\day_to_night_transition_long_roads/background_2_day_to_night_{i}.png").convert(),
             90
         ),
         (BACKGROUND_WIDTH, BACKGROUND_HEIGHT)
@@ -135,6 +156,9 @@ class Button:
 
         self.text_img = self.font.render(self.text, True, self.font_color)
         surface.blit(self.text_img, self.rect)
+    
+    def move(self, new_x, new_y):
+        self.rect.center = (new_x, new_y)
 
     def is_hovered(self, pos):
         return self.rect.collidepoint(pos)
@@ -182,6 +206,23 @@ while start_screen_running:
 game_is_running = True
 while game_is_running:
 
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        # Testing the button
+        if quit_button.is_clicked(event):
+            pygame.quit() 
+            sys.exit()
+        # Testing fullscreen toggle
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_f:
+                is_fullscreen = not is_fullscreen
+                if is_fullscreen:
+                    screen = pygame.display.set_mode((ACTUAL_SCREEN_WIDTH, ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN)
+                else:
+                    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+
     # Bewegung des Spielers
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP]:
@@ -223,10 +264,21 @@ while game_is_running:
     player_rect.centerx += player_speed_x
 
     #Zeichnen
-    for x in range(bg_x, SCREEN_WIDTH, current_background.get_width()):
-        screen.blit(current_background, (x, 0))  # Zeichne das Hintergrundbild an der aktuellen Position
+    for x in range(bg_x, ACTUAL_SCREEN_WIDTH, current_background.get_width()):
+        if is_fullscreen:
+            y = ACTUAL_SCREEN_HEIGHT // 8
+        else:
+            y = 0
+        screen.blit(current_background, (x, y))  # Zeichne das Hintergrundbild an der aktuellen Position
     screen.blit(player_image, player_rect)
     screen.blit(enemy_image, enemy_rect)
+
+    # Moving the button around based on screen size
+    quit_button.draw(screen)
+    if not is_fullscreen:
+        quit_button.move(50, 30)
+    else:
+        quit_button.move(50, ACTUAL_SCREEN_HEIGHT // 8 + 30)
 
     # Kollisionserkennung
     if player_rect.colliderect(enemy_rect):
@@ -243,16 +295,6 @@ while game_is_running:
         enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
         enemy_image = random.choice(enemy_images)
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        # Testing the button
-        if quit_button.is_clicked(event):
-            pygame.quit() 
-            sys.exit()
-
 
     # Keeping track of time
     elapsed_time = pygame.time.get_ticks() - start_time
@@ -302,7 +344,7 @@ while game_is_running:
 
     ##########################################################################################################################################
 
-    quit_button.draw(screen)
+ 
 
     pygame.display.update()
     clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
