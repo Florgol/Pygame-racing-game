@@ -83,7 +83,7 @@ transition_images = [
         # .. rotate ..
         pygame.transform.rotate(
             # Load, ..
-            pygame.image.load(f"backgrounds\day_to_night_transition_long_roads/background_2_day_to_night_{i}.png").convert(),
+            pygame.image.load(f"backgrounds/day_to_night_transition_long_roads/background_2_day_to_night_{i}.png").convert(),
             90
         ),
         (BACKGROUND_WIDTH, BACKGROUND_HEIGHT)
@@ -174,7 +174,7 @@ class Button:
 
 # Buttons for start screen
 start_button = Button(SCREEN_WIDTH // 2 + 110 , SCREEN_HEIGHT // 2 + 180, "START", font_size=90)
-quit_button_start_screen = Button(SCREEN_WIDTH // 2 - 2, SCREEN_HEIGHT // 2 + 28, "Quit", font_size=45)
+quit_button_start_screen = Button(SCREEN_WIDTH // 2 - 18, SCREEN_HEIGHT // 2 + 60, "Quit", font_size=55)
 
 # Buttons for ingame
 quit_button = Button(50, 30, "Quit", font_size=40)
