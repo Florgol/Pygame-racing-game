@@ -40,6 +40,32 @@ info = pygame.display.Info()
 ACTUAL_SCREEN_WIDTH, ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 is_fullscreen = False
 
+# Car lanes y positions  for fullscreen and windowed
+car_lanes_windowed = [
+    SCREEN_HEIGHT // 3 - 20,
+    SCREEN_HEIGHT // 3 + 80,
+    SCREEN_HEIGHT // 3 + 185,
+    SCREEN_HEIGHT // 3 + 290
+]
+
+car_lanes_fullscreen = [
+    ACTUAL_SCREEN_HEIGHT // 3 + 20,
+    ACTUAL_SCREEN_HEIGHT // 3 + 125,    
+    ACTUAL_SCREEN_HEIGHT // 3 + 230,
+    ACTUAL_SCREEN_HEIGHT // 3 + 335    
+]
+
+# Bike lanes y positions for fullscreen and windowed
+bike_lanes_windowed = [
+    SCREEN_HEIGHT // 3 - 80,
+    SCREEN_HEIGHT // 3 + 380
+]
+
+bike_lanes_fullscreen = [
+    ACTUAL_SCREEN_HEIGHT // 3 - 40,
+    ACTUAL_SCREEN_HEIGHT // 3 + 425
+]
+
 # Defining the scale factor for fullscreen scalling - I decided not to use this method, as it decreases the quality
 '''GAME_ASPECT_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT
 SCREEN_ASPECT_RATIO = ACTUAL_SCREEN_WIDTH / ACTUAL_SCREEN_HEIGHT
@@ -119,7 +145,7 @@ player_image = pygame.transform.rotate(player_image, 90)  # Drehe die Spielfigur
 player_image = pygame.transform.scale(player_image, (PLAYER_WIDTH, PLAYER_HEIGHT))  # Verkleinere die Spielfigur
 player_rect = player_image.get_rect()
 player_rect.centerx = SCREEN_WIDTH // 4  # Ändere die Position auf der X-Achse
-player_rect.centery = SCREEN_HEIGHT // 2   # Ändere die Position auf der Y-Achse
+player_rect.centery = random.choice(car_lanes_windowed)  # Change position on y-achsis to a predefined lane
 player_speed_x = 0  # Anfangsgeschwindigkeit in X-Richtung
 player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
 acceleration = PLAYER_ACCELERATION  # Beschleunigung
@@ -128,7 +154,7 @@ acceleration = PLAYER_ACCELERATION  # Beschleunigung
 enemy_image = random.choice(enemy_images)
 enemy_rect = enemy_image.get_rect()
 enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
-enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
+enemy_rect.centery = random.choice(car_lanes_windowed)
 enemy_speed = ENEMY_SPEED
 
 # Game clock
@@ -220,8 +246,14 @@ while game_is_running:
                 is_fullscreen = not is_fullscreen
                 if is_fullscreen:
                     screen = pygame.display.set_mode((ACTUAL_SCREEN_WIDTH, ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN)
+                    # We change the position of the car, as we draw the background image at a different background position for the fullscreen mode
+                    # The y position of the background image is at "ACTUAL_SCREEN_HEIGHT // 8", so we need to adjust all the cars
+                    player_rect.centery += ACTUAL_SCREEN_HEIGHT // 8
+                    enemy_rect.centery += ACTUAL_SCREEN_HEIGHT // 8
                 else:
                     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.NOFRAME)
+                    player_rect.centery -= ACTUAL_SCREEN_HEIGHT // 8
+                    enemy_rect.centery -= ACTUAL_SCREEN_HEIGHT // 8
 
     # Bewegung des Spielers
     keys = pygame.key.get_pressed()
@@ -291,9 +323,14 @@ while game_is_running:
         sys.exit()
 
     # Zurücksetzen des gegnerischen Autos
+
+    # Selecting lane (y poisition) based on fullscreen or windowed
+    selected_lane = random.choice(car_lanes_fullscreen) if is_fullscreen else random.choice(car_lanes_windowed)
+
     if enemy_rect.right < 0:
-        enemy_rect.centerx = SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
-        enemy_rect.centery = random.randint(50, SCREEN_HEIGHT - enemy_rect.height)
+        enemy_rect.centerx = ACTUAL_SCREEN_WIDTH if is_fullscreen else SCREEN_WIDTH
+        # Startposition des gegnerischen Autos auf der rechten Seite
+        enemy_rect.centery = selected_lane
         enemy_image = random.choice(enemy_images)
 
     # Keeping track of time
