@@ -174,7 +174,7 @@ class Game:
                 ),
                 (self.BACKGROUND_WIDTH, self.BACKGROUND_HEIGHT)
             )
-            for i in range(1, 9)
+            for i in range(1, 10)
         ]
 
         self.current_background = self.transition_images[0]
