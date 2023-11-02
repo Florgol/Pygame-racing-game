@@ -9,3 +9,5 @@ Wenn Tankanzeige abgelaufen ist, dann bleibt das Auto stehen
 Starting Screen mit kleinem UI
 Fahrstreifen müssen klar definiert sein, damit die Autos auf den Fahrstreifen spawnen
 Nacht anderer Soundtrack als Tag (genrell verschiedene Soundtracks)
+Baumkronen sollen über den Autos gezeichnet werden, so dass man einen 3D-Effekt erreicht
+Baumstümpfe sollten kollidierbare Objekte sein
