@@ -104,11 +104,15 @@ class Game:
     player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
     player_acceleration = 0
 
-    enemy_rect = None
-    enemy_speed = 0
+    #
+    # enemy_rect = None
+    # enemy_speed = 0
 
     # start screen
     start_screen_image = None
+
+    # fullscreen
+    is_fullscreen = True
 
 
 
@@ -155,11 +159,16 @@ class Game:
         # Game state
         self.state = self.start_screen  # Start with the start_screen state
 
-        self.load_resources()
+        # Enemy cars
+        self.enemies = []
 
+        # For spawning cars 
+        self.last_spawn_time = pygame.time.get_ticks()
 
         # Game clock
-        self.clock = pygame.time.Clock() 
+        self.clock = pygame.time.Clock()
+        
+        self.load_resources()
 
     def load_resources(self):
 
@@ -193,8 +202,8 @@ class Game:
             for i in range(1, 5)  # We assume to have 4 enemy car pictures
         ]
 
-        self.enemy_image = random.choice(self.enemy_images)
-        self.enemy_rect = self.enemy_image.get_rect()
+        # self.enemy_image = random.choice(self.enemy_images)
+        # self.enemy_rect = self.enemy_image.get_rect()
 
         # This is examplorary to understand how the lists enemy_images and transition_images are formed
         self.player_image = pygame.image.load("car2.png").convert_alpha()  # Loading image
@@ -207,23 +216,33 @@ class Game:
 
 
     def initialize_behaviour(self):
-                            
+
+        # Starting in Fullscreen - Here you can decide in which mode to start
+        self.screen = pygame.display.set_mode((self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN) # Fullscreen
+        # self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME) # Windowed
+        self.is_fullscreen = True
+                           
         self.player_rect.centerx = self.SCREEN_WIDTH // 4  # Ändere die Position auf der X-Achse
-        self.player_rect.centery = random.choice(self.car_lanes_windowed)  # Change position on y-axis to a predefined lane
+        self.player_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)  # Change position on y-axis to a predefined lane
         self.player_speed_x = 0  # Anfangsgeschwindigkeit in X-Richtung
         self.player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
         self.player_acceleration = self.PLAYER_ACCELERATION  # Beschleunigung
 
-        self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
-        self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
-        self.enemy_speed = self.ENEMY_SPEED
+        self.enemies = []
 
-        # Starting in Fullscreen - Here you can decide in which mode to start - change self.player_rect.centery/self.enemy_rect.centery accordingly
-        # self.screen = pygame.display.set_mode((self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN) # Fullscreen
-        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME) # Windowed
-        self.is_fullscreen = False
+        # self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
+        # self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
+        # self.enemy_speed = self.ENEMY_SPEED
+        # Spawn an initial car
+        self.spawn_car()
 
-
+    def spawn_car(self):
+        enemy_image = random.choice(self.enemy_images)
+        enemy_rect = enemy_image.get_rect()
+        enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
+        enemy_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
+        enemy_speed = self.ENEMY_SPEED
+        self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
 
     # Start screen state - start screen loop
     def start_screen(self):
@@ -304,8 +323,10 @@ class Game:
             self.player_speed_y = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_y))
             self.player_speed_x = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_x))
 
-            # Bewegung des gegnerischen Autos
-            self.enemy_rect.centerx -= self.enemy_speed
+            # Update enemy cars
+            for enemy in self.enemies:
+                enemy["rect"].centerx -= enemy["speed"]
+
 
             # Bewegung des Hintergrundbilds
             self.bg_x -= self.BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
@@ -326,7 +347,18 @@ class Game:
                     y = 0
                 self.screen.blit(self.current_background, (x, y))  # Zeichne das Hintergrundbild an der aktuellen Position
             self.screen.blit(self.player_image, self.player_rect)
-            self.screen.blit(self.enemy_image, self.enemy_rect)
+
+            # Spawing cars
+            current_time_for_car_spawn = pygame.time.get_ticks()
+            if current_time_for_car_spawn - self.last_spawn_time >= 3000:  # 3 seconds
+                self.spawn_car()
+                self.last_spawn_time = current_time_for_car_spawn
+
+
+            # Drawing enemy cars
+            for enemy in self.enemies:
+                self.screen.blit(enemy["image"], enemy["rect"])
+
 
             # Moving the button around based on screen size
             self.quit_button.draw(self.screen)
@@ -335,23 +367,19 @@ class Game:
             else:
                 self.quit_button.move(50, self.ACTUAL_SCREEN_HEIGHT // 8 + 30)
 
-            # Kollisionserkennung
-            if self.player_rect.colliderect(self.enemy_rect):
-                print("GAME OVER")
-                self.state = self.start_screen
-                self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
-                return
+            # Collision detection
+            for enemy in self.enemies:
+                if self.player_rect.colliderect(enemy["rect"]):
+                    print("GAME OVER")
+                    self.state = self.main_game
+                    return
 
-            # Zurücksetzen des gegnerischen Autos
+            # Handle enemy off-screen and spawning
+            for enemy in self.enemies:
+                if enemy["rect"].right < 0:
+                    self.enemies.remove(enemy)
+                    self.spawn_car()
 
-            # Selecting lane (y poisition) based on fullscreen or windowed
-            selected_lane = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
-
-            if self.enemy_rect.right < 0:
-                self.enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
-                # Startposition des gegnerischen Autos auf der rechten Seite
-                self.enemy_rect.centery = selected_lane
-                self.enemy_image = random.choice(self.enemy_images)
 
             # Keeping track of time
             elapsed_time = pygame.time.get_ticks() - self.start_time
