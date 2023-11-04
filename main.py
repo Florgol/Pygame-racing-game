@@ -244,6 +244,54 @@ class Game:
         enemy_speed = self.ENEMY_SPEED
         self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
 
+
+    def night_day_transition(self):
+
+        # Keeping track of time
+        elapsed_time = pygame.time.get_ticks() - self.start_time
+
+        # After "NIGHT_DAY_CYCLE" milliseconds of daytime driving, we start the transition
+        # We give elapsed_time a window due to the inprecision of .get_ticks()
+        if self.NIGHT_DAY_CYCLE <= elapsed_time < self.NIGHT_DAY_CYCLE + 6000 and self.transition_start_time is None:
+            self.transition_start_time = pygame.time.get_ticks()
+
+        # We keep track of when the transition started
+        if self.transition_start_time:
+            time_since_transition_start = pygame.time.get_ticks() - self.transition_start_time
+
+            # While we are not in a reverse transition (night to day), we change the background image every 5 seconds
+            if not self.reverse_transition:
+                transition_index = time_since_transition_start // self.TRANSITION_SPEED  # every 5 seconds
+
+                # We only change the background image, when it is fully on screen ((SCREEN_WIDTH - BACKGROUND_WIDTH) < bg_x <= 0) 
+                # and while we still have new transition images in our list
+                if transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
+                    self.current_background = self.transition_images[transition_index]
+                # Once we run out of transition images, we let it be night (last image in list) for the given time (NIGHT_DAY_CYCLE) 
+                elif transition_index >= len(self.transition_images):
+                    if time_since_transition_start < (len(self.transition_images) * self.TRANSITION_SPEED + self.NIGHT_DAY_CYCLE): 
+                        self.current_background = self.transition_images[-1]  # This line is mostly for readibility, since this is the latest current_background anyways
+                    # Once the  time_since_transition has exceeded the given values (it comes out to 1 minute night), we start the reverse transition
+                    else:  
+                        self.reverse_transition = True
+                        self.transition_start_time = pygame.time.get_ticks()
+
+            # We keep time of when the reverse transition started and make sure the transition_index counts reversly (e.g. 8 to 1)
+            if self.reverse_transition:
+                time_since_reverse_transition = pygame.time.get_ticks() - self.transition_start_time
+                transition_index = len(self.transition_images) - 1 - time_since_reverse_transition // self.TRANSITION_SPEED
+
+                # We only change the background image, when it is fully on screen ((SCREEN_WIDTH - BACKGROUND_WIDTH) < bg_x <= 0)
+                # and while we still have new transition images in our list
+                if 0 <= transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
+                    self.current_background = self.transition_images[transition_index]
+                # Once we ran out of transitin images, we reset for the next loop
+                elif transition_index < 0:
+                    self.start_time = pygame.time.get_ticks()
+                    self.transition_start_time = None
+                    self.reverse_transition = False
+
+
     # Start screen state - start screen loop
     def start_screen(self):
         while True:
@@ -291,11 +339,13 @@ class Game:
                             # We change the position of the car, as we draw the background image at a different background position for the fullscreen mode
                             # The y position of the background image is at "ACTUAL_SCREEN_HEIGHT // 8", so we need to adjust all the cars
                             self.player_rect.centery += self.ACTUAL_SCREEN_HEIGHT // 8
-                            self.enemy_rect.centery += self.ACTUAL_SCREEN_HEIGHT // 8
+                            for enemy in self.enemies:
+                                enemy["rect"].centery += self.ACTUAL_SCREEN_HEIGHT // 8
                         else:
                             self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
                             self.player_rect.centery -= self.ACTUAL_SCREEN_HEIGHT // 8
-                            self.enemy_rect.centery -= self.ACTUAL_SCREEN_HEIGHT // 8
+                            for enemy in self.enemies:
+                                enemy["rect"].centery -= self.ACTUAL_SCREEN_HEIGHT // 8
 
             # Bewegung des Spielers
             keys = pygame.key.get_pressed()
@@ -380,57 +430,11 @@ class Game:
                     self.enemies.remove(enemy)
                     self.spawn_car()
 
-
-            # Keeping track of time
-            elapsed_time = pygame.time.get_ticks() - self.start_time
-
-            ############################################## Night to day and day to night transition loop ##############################################
-
-            # After 1 minute of daytime driving, we start the transition
-            # We give elapsed_time a window due to the inprecision of .get_ticks()
-            if self.NIGHT_DAY_CYCLE <= elapsed_time < 66000 and self.transition_start_time is None:
-                self.transition_start_time = pygame.time.get_ticks()
-            
-            # We keep track of when the transition started
-            if self.transition_start_time:
-                time_since_transition_start = pygame.time.get_ticks() - self.transition_start_time
-
-                # While we are not in a reverse transition, we change the background image every 5 seconds
-                if not self.reverse_transition:
-                    transition_index = time_since_transition_start // self.TRANSITION_SPEED  # every 5 seconds
-
-                    # We only change the background image, when it is fully on screen ((SCREEN_WIDTH - BACKGROUND_WIDTH) < bg_x <= 0) 
-                    # and while we still have new transition images in our list
-                    if transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
-                        self.current_background = self.transition_images[transition_index]
-                    # Once we run out of transition images, we let it be night (last image in list) for the given time (NIGHT_DAY_CYCLE) 
-                    elif transition_index >= len(self.transition_images):
-                        if time_since_transition_start < (len(self.transition_images) * self.TRANSITION_SPEED + self.NIGHT_DAY_CYCLE): 
-                            self.current_background = self.transition_images[-1]  # This line is mostly for readibility, since this is the latest current_background anyways
-                        # Once the  time_since_transition has exceeded the given values (it comes out to 1 minute night), we start the reverse transition
-                        else:  
-                            self.reverse_transition = True
-                            self.transition_start_time = pygame.time.get_ticks()
-
-                # We keep time of when the reverse transition started and make sure the transition_index counts reversly (e.g. 8 to 1)
-                if self.reverse_transition:
-                    time_since_reverse_transition = pygame.time.get_ticks() - self.transition_start_time
-                    transition_index = len(self.transition_images) - 1 - time_since_reverse_transition // self.TRANSITION_SPEED
-
-                    # We only change the background image, when it is fully on screen ((SCREEN_WIDTH - BACKGROUND_WIDTH) < bg_x <= 0)
-                    # and while we still have new transition images in our list
-                    if 0 <= transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
-                        self.current_background = self.transition_images[transition_index]
-                    # Once we ran out of transitin images, we reset for the next loop
-                    elif transition_index < 0:
-                        self.start_time = pygame.time.get_ticks()
-                        self.transition_start_time = None
-                        self.reverse_transition = False
-
-            ##########################################################################################################################################
+            self.night_day_transition()
 
             pygame.display.update()
             self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
+
 
     def run(self):
         while True:
