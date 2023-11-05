@@ -159,9 +159,6 @@ class Game:
         # Game state
         self.state = self.start_screen  # Start with the start_screen state
 
-        # Enemy cars
-        self.enemies = []
-
         # For spawning cars 
         self.last_spawn_time = pygame.time.get_ticks()
 
@@ -236,13 +233,30 @@ class Game:
         # Spawn an initial car
         self.spawn_car()
 
+    def will_collide(self, new_enemy_rect):
+        buffer_space = 20  # 20 pixels buffer, you can adjust
+        for enemy in self.enemies:
+            # Inflate the existing enemy rect by the buffer space
+            if enemy["rect"].inflate(buffer_space, 0).colliderect(new_enemy_rect):
+                return True
+        return False
+
+
     def spawn_car(self):
         enemy_image = random.choice(self.enemy_images)
         enemy_rect = enemy_image.get_rect()
+
         enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
-        enemy_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
-        enemy_speed = self.ENEMY_SPEED
-        self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
+        enemy_rect.centerx += 50 # Adding cars a bit outside of screen, so they drive in
+        attempts = 5 # Using max number of attempts to avoid endless loop when screen is crowded
+
+        for _ in range(attempts):
+            enemy_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
+            if not self.will_collide(enemy_rect):
+                enemy_speed = self.ENEMY_SPEED
+                self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
+                break
+
 
 
     def night_day_transition(self):
