@@ -116,10 +116,17 @@ class Game:
 
 
 
+
     def __init__(self):
     # Infos about the actual screen size of user
         info = pygame.display.Info()
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
+
+        # Minimum and maximum car position - invisible borders that the car can not cross
+        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8
+        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 -10
+        self.MIN_X = 0
+        self.MAX_X = self.ACTUAL_SCREEN_WIDTH
 
 
         self.car_lanes_fullscreen = [
@@ -248,7 +255,7 @@ class Game:
 
         enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
         enemy_rect.centerx += 50 # Adding cars a bit outside of screen, so they drive in
-        attempts = 5 # Using max number of attempts to avoid endless loop when screen is crowded
+        attempts = 5 # Using a maximum number of attempts to avoid endless loop when screen is crowded
 
         for _ in range(attempts):
             enemy_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
@@ -304,7 +311,27 @@ class Game:
                     self.start_time = pygame.time.get_ticks()
                     self.transition_start_time = None
                     self.reverse_transition = False
+    
 
+    def update_player_position(self):
+
+        # Movement of player based on speed (y-axis)
+        self.player_rect.centery += self.player_speed_y
+
+        # Check and adjust if the player car is out of the bounds:
+        if self.player_rect.top < self.MIN_Y:
+            self.player_rect.top = self.MIN_Y
+        elif self.player_rect.bottom > self.MAX_Y:
+            self.player_rect.bottom = self.MAX_Y
+
+        # Movement of player based on speed (x-axis)
+        self.player_rect.centerx += self.player_speed_x
+
+        # Check and adjust if the player car is out of the x-bounds:
+        if self.player_rect.left < self.MIN_X:
+            self.player_rect.left = self.MIN_X
+        elif self.player_rect.right > self.MAX_X:
+            self.player_rect.right = self.MAX_X
 
     # Start screen state - start screen loop
     def start_screen(self):
@@ -399,9 +426,7 @@ class Game:
             if self.bg_x < - self.current_background.get_width():
                 self.bg_x = 0
 
-            # Bewegung des Spielers basierend auf Geschwindigkeit
-            self.player_rect.centery += self.player_speed_y
-            self.player_rect.centerx += self.player_speed_x
+            self.update_player_position()
 
             #Zeichnen
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
