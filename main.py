@@ -42,6 +42,7 @@ class Button:
 
 
 
+
 # Main game class
 class Game:
 
@@ -59,9 +60,13 @@ class Game:
     PLAYER_WIDTH = 110
     PLAYER_HEIGHT = 55
 
-    # Enemy sizes
+    # Enemy car sizes
     ENEMY_WIDTH_CAR = 110
     ENEMY_HEIGHT_CAR = 55
+
+    # Enemy bike sizes
+    BIKE_WIDTH = 80
+    BIKE_HEIGHT = 42
 
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
@@ -137,8 +142,8 @@ class Game:
         ]
 
         self.bike_lanes_fullscreen = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 - 40,
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 425
+            self.ACTUAL_SCREEN_HEIGHT // 3 - 70,
+            self.ACTUAL_SCREEN_HEIGHT // 3 + 395
         ]
 
         # Tracking game time
@@ -176,6 +181,7 @@ class Game:
 
     def load_resources(self):
 
+        # Loading background images 
         self.transition_images = [
             # .. and scale backgrounds.
             pygame.transform.scale(
@@ -191,7 +197,8 @@ class Game:
         ]
 
         self.current_background = self.transition_images[0]
-
+        
+        # Loading enemy car images
         self.enemy_images = [
             # .. and scale enemy cars.
             pygame.transform.scale(
@@ -204,6 +211,18 @@ class Game:
                 (self.ENEMY_WIDTH_CAR, self.ENEMY_HEIGHT_CAR)
             )
             for i in range(1, 5)  # We assume to have 4 enemy car pictures
+        ]
+
+
+        self.bike_animation_images = [
+            pygame.transform.scale(
+                pygame.transform.rotate(
+                    pygame.image.load(f"bike1_animation/bike1_animation_part{i}.png").convert_alpha(),
+                    90
+                ),
+                (self.BIKE_WIDTH, self.BIKE_HEIGHT)
+            )
+            for i in range(1, 4)  # Assuming you have 3 bike images
         ]
 
         # self.enemy_image = random.choice(self.enemy_images)
@@ -233,6 +252,7 @@ class Game:
         self.player_acceleration = self.PLAYER_ACCELERATION  # Beschleunigung
 
         self.enemies = []
+        self.bikes = []
 
         # self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         # self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
@@ -263,6 +283,12 @@ class Game:
                 enemy_speed = self.ENEMY_SPEED
                 self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
                 break
+
+
+    def spawn_bike(self):
+        # Position the bike off the screen to the right
+        new_bike = Bike(self.ACTUAL_SCREEN_WIDTH +50, random.choice(self.bike_lanes_fullscreen), random.randint(4, 6), self.bike_animation_images)
+        self.bikes.append(new_bike)
 
 
 
@@ -361,6 +387,10 @@ class Game:
 
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
         self.initialize_behaviour()
+
+        # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
+        self.last_bike_spawn_time = pygame.time.get_ticks()
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -443,6 +473,12 @@ class Game:
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
 
+            # Spawning bikes
+            current_time_for_bike_spawn = pygame.time.get_ticks()
+            if current_time_for_bike_spawn - self.last_bike_spawn_time >= 10000:  # 10 seconds
+                self.spawn_bike()
+                self.last_bike_spawn_time = current_time_for_bike_spawn
+      
 
             # Drawing enemy cars
             for enemy in self.enemies:
@@ -471,6 +507,18 @@ class Game:
 
             self.night_day_transition()
 
+
+            # Testing bikes
+            for bike in self.bikes:
+                bike.animate()
+                bike.move()
+                bike.draw(self.screen)
+
+                # Remove bikes that are out of the screen
+                if bike.rect.right < 0:
+                    self.bikes.remove(bike)
+
+
             pygame.display.update()
             self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
 
@@ -480,6 +528,29 @@ class Game:
             self.state()
 
 
+class Bike:
+    def __init__(self, x, y, speed, bike_animation_images):
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.images = bike_animation_images
+        self.current_image = 0  # Start at the first frame
+        self.image = self.images[self.current_image]
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        self.animation_time = pygame.time.get_ticks()
+
+    def animate(self):
+        # Change to the next frame every 200ms as an example
+        if pygame.time.get_ticks() - self.animation_time > 200:
+            self.current_image = (self.current_image + 1) % len(self.images)
+            self.image = self.images[self.current_image]
+            self.animation_time = pygame.time.get_ticks()
+
+    def move(self):
+        self.rect.x -= self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
 
 
 # Running the game
