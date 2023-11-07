@@ -9,30 +9,26 @@ pygame.init()
 # I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
 # - might need to take another look later
 class Button:
-    def __init__(self, x, y, text, font_size=80, font_color=(0, 0, 0), hover_color=(255, 255, 255)):
-        # Our own font
+    def __init__(self, x, y, text, font_size=80, 
+                 font_color=(0, 0, 0), hover_color=(255, 255, 255)):
         self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
         self.text = text
-        self.hover_color = hover_color
-        self.initial_color = font_color
-        self.font_color = font_color
-        self.text_img = self.font.render(self.text, True, font_color)
+        self.colors = {'default': font_color, 'hover': hover_color}
+        self.current_color = 'default'
+        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
         self.rect = self.text_img.get_rect(center=(x, y))
 
     def draw(self, surface):
-        if self.is_hovered(pygame.mouse.get_pos()):
-            self.font_color = self.hover_color
-        else:
-            self.font_color = self.initial_color
-
-        self.text_img = self.font.render(self.text, True, self.font_color)
+        # Update color based on hover state
+        self.current_color = 'hover' if self.is_hovered(pygame.mouse.get_pos()) else 'default'
+        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
         surface.blit(self.text_img, self.rect)
-    
-    def move(self, new_x, new_y):
-        self.rect.center = (new_x, new_y)
 
     def is_hovered(self, pos):
         return self.rect.collidepoint(pos)
+
+    def move(self, new_x, new_y):
+        self.rect.center = (new_x, new_y)
 
     def is_clicked(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
