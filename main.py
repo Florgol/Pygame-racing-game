@@ -1,9 +1,13 @@
 import pygame
 import sys
 import random
+import time
 
 # Initialisierung von Pygame
 pygame.init()
+print(pygame.mixer.get_init())
+pygame.mixer.init()
+
 
 # Defining a Button class to use buttons in the start screen and also the game screen
 # I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
@@ -116,8 +120,6 @@ class Game:
     is_fullscreen = True
 
 
-
-
     def __init__(self):
     # Infos about the actual screen size of user
         info = pygame.display.Info()
@@ -152,6 +154,7 @@ class Game:
         # Initiate screen - start screen is windowed
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
 
+
         # Initiate game surface - this works together with "screen" and "scale_factor" to switch between fullscreen and windowed
         self.game_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
 
@@ -176,6 +179,8 @@ class Game:
         self.load_resources()
 
     def load_resources(self):
+        # Lade Sounds
+        self.load_sound()
 
         # Loading background images 
         self.transition_images = [
@@ -280,11 +285,22 @@ class Game:
                 self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
                 break
 
+    # load sound for spawning bike
+    def load_bike_sound(self):
+        # load bike sound
+        self.bike_sound = pygame.mixer.Sound("./sounds/bike.wav")
+        self.bike_sound.set_volume(0.15)
+
+    def play_bike_sound(self):
+        self.bike_sound.play()
+        pygame.mixer.Channel(1).play(self.bike_sound)
 
     def spawn_bike(self):
         # Position the bike off the screen to the right
         new_bike = Bike(self.ACTUAL_SCREEN_WIDTH +50, random.choice(self.bike_lanes_fullscreen), random.randint(4, 6), self.bike_animation_images)
         self.bikes.append(new_bike)
+        # sound for spawning bike
+        self.play_bike_sound()  # Aufruf des bike spawn sounds
 
 
 
@@ -355,8 +371,78 @@ class Game:
         elif self.player_rect.right > self.MAX_X:
             self.player_rect.right = self.MAX_X
 
+
+
+    # Start Screen sound
+    def load_sound(self):
+        # load start screen sound
+        self.start_screen_sound = pygame.mixer.Sound("./sounds/start_screen.wav")
+        self.start_screen_sound.set_volume(0.2)
+
+        # load start button sound
+        self.start_button_sound = pygame.mixer.Sound("./sounds/button_start_sound.wav")
+        self.start_button_sound.set_volume(0.5)
+
+        # load quit button sound
+        self.quit_button_sound = pygame.mixer.Sound("./sounds/button_quit_sound.wav")
+        self.quit_button_sound.set_volume(0.5)
+
+        # load soundtrack file
+        self.soundtrack = pygame.mixer.Sound("./sounds/soundtrack.wav")
+        self.soundtrack.set_volume(0.3)
+
+        # load collision file
+        self.collision = pygame.mixer.Sound("./sounds/collision.wav")
+        self.collision.set_volume(0.5)
+
+        # load vroom file
+        self.vroom = pygame.mixer.Sound("./sounds/vroom.wav")
+        self.vroom.set_volume(0.5)
+
+    # start_screen sound play
+    def play_soundtrack(self):
+        pygame.mixer.Channel(5).play(self.soundtrack, loops=-1)  # sound plays forever // extra channel
+        self.soundtrack.play()
+
+    # stop soundtrack
+    def stop_soundtrack(self):
+        # Stoppt den Sound auf Kanal 3 (der Soundtrack-Kanal)
+        self.soundtrack.stop() # hier gab es Überlagerungen
+
+    # start_screen sound play
+    def play_start_screen_sound(self):
+        pygame.mixer.Channel(2).play(self.start_screen_sound, loops=-1) # start screen sound plays forever // extra channel
+        self.start_screen_sound.play()
+
+    # start button sound play
+    def play_start_button_sound(self):
+        pygame.mixer.Channel(0).play(self.start_button_sound) # mixer setting to play sounds on different channels
+        self.start_button_sound.play()
+
+    # stop start_screen sound
+    def stop_start_screen_sound(self, fadeout_time=1):
+        # Stoppt den Sound auf Kanal 2 (der Hintergrundmusik-Kanal)
+        pygame.mixer.Channel(2).fadeout(fadeout_time)
+
+    # quit button sound play
+    def play_quit_button_sound(self):
+        pygame.mixer.Channel(0).play(self.quit_button_sound) # mixer setting to play sounds on different channels
+        self.quit_button_sound.play()
+
+    # collision sound play
+    def play_collision(self):
+        pygame.mixer.Channel(5).play(self.collision) # mixer setting to play sounds on different channels
+        self.collision.play()
+
+    # Vroom sound play
+    def play_vroom(self):
+        pygame.mixer.Channel(5).play(self.vroom) # mixer setting to play sounds on different channels
+        self.vroom.play()
+
     # Start screen state - start screen loop
     def start_screen(self):
+        self.stop_soundtrack()
+        self.play_start_screen_sound()  # Sound nur im Startbildschirm abspielen
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -364,11 +450,18 @@ class Game:
                     exit()  
                 # The start screen loop will terminate, when the start button is clicked - this will bring the player to the main game loop (follow code)
                 if self.start_button.is_clicked(event):
+                    self.stop_start_screen_sound()
+                    self.play_start_button_sound() # Aufruf des start button
                     self.start_time = pygame.time.get_ticks() # Start time of main game
                     self.state = self.main_game
                     return
                 # The window will be closed when the quit button is pressed
                 if self.quit_button_start_screen.is_clicked(event):
+                    self.play_quit_button_sound() # Aufruf des start button sounds
+
+                    ### delay damit der sound abgespielt wird bevor das fenster schließt
+                    time.sleep(1)
+                    # exit game / start screen
                     pygame.quit()
                     sys.exit()
 
@@ -378,8 +471,10 @@ class Game:
             self.quit_button_start_screen.draw(self.screen)
             pygame.display.update()
 
+
     # This is the main game state - main game loop
     def main_game(self):
+        self.play_soundtrack()  # Aufruf des soundtracks
 
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
         self.initialize_behaviour()
@@ -418,8 +513,10 @@ class Game:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_UP]:
                 self.player_speed_y -= self.player_acceleration  # Beschleunigen nach oben
+                # sound
             elif keys[pygame.K_DOWN]:
                 self.player_speed_y += self.player_acceleration  # Beschleunigen nach unten
+                # sound
             else:
                 if self.player_speed_y > 0:
                     self.player_speed_y -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
@@ -428,8 +525,10 @@ class Game:
 
             if keys[pygame.K_LEFT]:
                 self.player_speed_x -= self.player_acceleration  # Beschleunigen nach links
+                # sound
             elif keys[pygame.K_RIGHT]:
                 self.player_speed_x += self.player_acceleration  # Beschleunigen nach rechts
+                #self.play_vroom()
             else:
                 if self.player_speed_x > 0:
                     self.player_speed_x -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
@@ -491,6 +590,8 @@ class Game:
             # Collision detection
             for enemy in self.enemies:
                 if self.player_rect.colliderect(enemy["rect"]):
+                    self.play_collision()
+                    self.stop_soundtrack() # stops soundtrack
                     print("GAME OVER")
                     self.state = self.main_game
                     return
@@ -551,6 +652,7 @@ class Bike:
 
 # Running the game
 game = Game()
+game.load_bike_sound() # load spawn bike sound
 game.run()
 
 

@@ -1,0 +1,24 @@
+Tag-Nacht-Wechsel
+Start-Screen mit Start und Quit Button und Background
+Fullscreen und Windowed Modus
+Bei Nacht Schweinwerfer am Auto anschalten
+sound für Bremsen, Gas Geben, Crash
+Background Sound für jedes Level
+kleine Benzinkanister (Asset) einsammeln und dafür die Tankanzeige erweitern
+Wenn Tankanzeige abgelaufen ist, dann bleibt das Auto stehen
+Starting Screen mit kleinem UI
+Fahrstreifen müssen klar definiert sein, damit die Autos auf den Fahrstreifen spawnen
+Nacht anderer Soundtrack als Tag (genrell verschiedene Soundtracks)
+Baumkronen sollen über den Autos gezeichnet werden, so dass man einen 3D-Effekt erreicht
+Baumstämme sollten kollidierbare Objekte sein
+Autos und generell spawnable Game-Objekte sollten nicht übereinander spawnen können
+Fahrradfahrer auf den kleineren Fahrradstreifen
+Fahrradfahrer haben eine kleine Animation
+Fußgänger auf dem Fußgängerweg
+Wellen von Autos (nicht, dass immer nur noch mehr spawnen), sodass der Spieler eine seinen Sieg, durch eine schwere Welle von Autos gefahren zu sein, kurz auskosten kann
+Reifenabdrücke, wenn über das Gras gefahren wird
+Crash: kleine explosions-animation, Sound dafür, vielleicht ein png von Auto des Spielers mit eingedellter Kühlerhaube
+Unterschiedliche Geschwindigkeiten von Autos, vielleicht nur in lanes
+Es sollte möglich sein eine Lane freizuhalten, sodass es ein Event "Raser" gibt. Ein sehr schnelles Auto, dass von links nach rechts an einem vorbeizieht (in der Nacht)
+Spiel pausieren
+Game Over Bildschirm mit Soundtrack
