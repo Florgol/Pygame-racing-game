@@ -46,6 +46,16 @@ class Button:
 # Main game class
 class Game:
 
+    # Tankanzeige
+    def draw_shrinking_bar(self):
+        if self.tank_width > 0:
+            self.tank_width -= 1
+            self.screen.fill(self.BG_COLOR)
+
+            pygame.draw.rect(self.screen, self.GREEN, self.tank_rect)
+
+
+
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
     BG_COLOR = (0, 0, 0)
@@ -177,6 +187,8 @@ class Game:
         self.clock = pygame.time.Clock()
         
         self.load_resources()
+
+
 
     def load_resources(self):
         # Lade Sounds
@@ -482,7 +494,16 @@ class Game:
         # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
         self.last_bike_spawn_time = pygame.time.get_ticks()
 
+        # Tankanzeige
+        self.tank_width = 300
+        self.tank_height = 20
+
+
         while True:
+            # Zeichnen und Aktualisieren der Tankanzeige
+            self.draw_shrinking_bar()
+            pygame.display.update()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
