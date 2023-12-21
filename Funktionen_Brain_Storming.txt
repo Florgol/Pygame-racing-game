@@ -22,3 +22,4 @@ Unterschiedliche Geschwindigkeiten von Autos, vielleicht nur in lanes
 Es sollte möglich sein eine Lane freizuhalten, sodass es ein Event "Raser" gibt. Ein sehr schnelles Auto, dass von links nach rechts an einem vorbeizieht (in der Nacht)
 Spiel pausieren
 Game Over Bildschirm mit Soundtrack
+Wenn man den Start-Button klickt könnte der Start-Screen schwarz ausfaden und die Rücklichter der Autos bleiben als rote Punkte sichtbar
