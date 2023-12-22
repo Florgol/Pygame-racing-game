@@ -46,15 +46,31 @@ class Button:
 # Main game class
 class Game:
 
-    # Tankanzeige
-    def draw_shrinking_bar(self):
-        if self.tank_width > 0:
-            self.tank_width -= 1
-            self.screen.fill(self.BG_COLOR)
+    # Level mit Grafiken
+    def draw_level(self):
+        # Lösche den gesamten Bildschirm
+        self.screen.fill(self.BG_COLOR)
 
-            pygame.draw.rect(self.screen, self.GREEN, self.tank_rect)
+        # Liste der Grafiken für den Level-Indikator
+        level_images = [
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+        ]
 
+        # Anzahl der verbleibenden Leben
+        remaining_lives = 3 - len(self.enemies_collided)
 
+        # Grafiken skalieren
+        scaled_width = 50
+        scaled_height = 50
+
+        # verbleibende Level Grafiken zeichnen
+        for i in range(remaining_lives):
+            # Skalieren
+            scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
+            # Zeichne skalierte Grafik
+            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
 
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
@@ -183,7 +199,10 @@ class Game:
         # For spawning cars 
         self.last_spawn_time = pygame.time.get_ticks()
 
-        # Game clock
+        # Enemies collision list
+        self.enemies_collided = []  # Hier die Liste initialisieren
+
+    # Game clock
         self.clock = pygame.time.Clock()
         
         self.load_resources()
@@ -500,10 +519,6 @@ class Game:
 
 
         while True:
-            # Zeichnen und Aktualisieren der Tankanzeige
-            self.draw_shrinking_bar()
-            pygame.display.update()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -574,7 +589,8 @@ class Game:
 
             self.update_player_position()
 
-            #Zeichnen
+            # Zeichnen und Aktualisieren der Tankanzeige
+            self.draw_level()  # Anzeigen des Level-Indikators
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
                 if self.is_fullscreen:
                     y = self.ACTUAL_SCREEN_HEIGHT // 8
@@ -614,7 +630,12 @@ class Game:
                     self.play_collision()
                     self.stop_soundtrack() # stops soundtrack
                     print("GAME OVER")
-                    self.state = self.main_game
+
+                    # Reduziere die verbleibenden Leben bei einer Kollision
+                    if len(self.enemies_collided) < 3:
+                        self.enemies_collided.append(enemy)
+                    if len(self.enemies_collided) == 3:
+                        self.state = self.start_screen
                     return
 
             # Handle enemy off-screen and spawning
