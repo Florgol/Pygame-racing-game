@@ -123,11 +123,14 @@ class Game:
     # Resources
     transition_images = []
     enemy_images = []
+    cut_out_tree_images = []
 
     # Default background
     current_background = None
     # Background Position X
     bg_x = 0
+    # Default trees
+    current_trees = None
 
     player_rect = None
 
@@ -228,7 +231,24 @@ class Game:
             for i in range(1, 10)
         ]
 
+        # Loading cut out tree images
+        self.cut_out_tree_images = [
+            # .. and scale backgrounds.
+            pygame.transform.scale(
+                # .. rotate ..
+                pygame.transform.rotate(
+                    # Load, ..
+                    pygame.image.load(f"trees/transparent_background_2_day_to_night_{i}.png").convert_alpha(),
+                    90
+                ),
+                (self.BACKGROUND_WIDTH, self.BACKGROUND_HEIGHT)
+            )
+            for i in range(1, 10)
+        ]
+
+        # Initializing current background and trees
         self.current_background = self.transition_images[0]
+        self.current_trees = self.cut_out_tree_images[0]
         
         # Loading enemy car images
         self.enemy_images = [
@@ -357,6 +377,7 @@ class Game:
                 # and while we still have new transition images in our list
                 if transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
                     self.current_background = self.transition_images[transition_index]
+                    self.current_trees = self.cut_out_tree_images[transition_index]
                 # Once we run out of transition images, we let it be night (last image in list) for the given time (NIGHT_DAY_CYCLE) 
                 elif transition_index >= len(self.transition_images):
                     if time_since_transition_start < (len(self.transition_images) * self.TRANSITION_SPEED + self.NIGHT_DAY_CYCLE): 
@@ -375,6 +396,7 @@ class Game:
                 # and while we still have new transition images in our list
                 if 0 <= transition_index < len(self.transition_images) and (self.SCREEN_WIDTH - self.BACKGROUND_WIDTH) < self.bg_x <= 0:
                     self.current_background = self.transition_images[transition_index]
+                    self.current_trees = self.cut_out_tree_images[transition_index]
                 # Once we ran out of transitin images, we reset for the next loop
                 elif transition_index < 0:
                     self.start_time = pygame.time.get_ticks()
@@ -583,7 +605,7 @@ class Game:
             # Bewegung des Hintergrundbilds
             self.bg_x -= self.BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
 
-            # Wenn das Hintergrundbild aus dem Bildschirm verschwindet, setze es zurück
+            # When the background is outside of the screen completely, reset bg_x
             if self.bg_x < - self.current_background.get_width():
                 self.bg_x = 0
 
@@ -591,13 +613,27 @@ class Game:
 
             # Zeichnen und Aktualisieren der Tankanzeige
             self.draw_level()  # Anzeigen des Level-Indikators
+            
+            # We are drawing the current background 2 times
+            # One time at bg_x and one time at bg_x + self.current_background.get_width())
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
                 if self.is_fullscreen:
                     y = self.ACTUAL_SCREEN_HEIGHT // 8
                 else:
                     y = 0
-                self.screen.blit(self.current_background, (x, y))  # Zeichne das Hintergrundbild an der aktuellen Position
+                self.screen.blit(self.current_background, (x, y))
+
+            # Drawing player car
             self.screen.blit(self.player_image, self.player_rect)
+
+            # We are drawing the trees in the same fashion as the background - 2 times
+            # But after the player car to create a layered effect
+            for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
+                if self.is_fullscreen:
+                    y = self.ACTUAL_SCREEN_HEIGHT // 8
+                else:
+                    y = 0
+                self.screen.blit(self.current_trees, (x, y))
 
             # Spawing cars
             current_time_for_car_spawn = pygame.time.get_ticks()
