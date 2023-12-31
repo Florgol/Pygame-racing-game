@@ -9,68 +9,10 @@ print(pygame.mixer.get_init())
 pygame.mixer.init()
 
 
-# Defining a Button class to use buttons in the start screen and also the game screen
-# I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
-# - might need to take another look later
-class Button:
-    def __init__(self, x, y, text, font_size=80, 
-                 font_color=(0, 0, 0), hover_color=(255, 255, 255)):
-        self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
-        self.text = text
-        self.colors = {'default': font_color, 'hover': hover_color}
-        self.current_color = 'default'
-        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
-        self.rect = self.text_img.get_rect(center=(x, y))
-
-    def draw(self, surface):
-        # Update color based on hover state
-        self.current_color = 'hover' if self.is_hovered(pygame.mouse.get_pos()) else 'default'
-        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
-        surface.blit(self.text_img, self.rect)
-
-    def is_hovered(self, pos):
-        return self.rect.collidepoint(pos)
-
-    def move(self, new_x, new_y):
-        self.rect.center = (new_x, new_y)
-
-    def is_clicked(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.is_hovered(pygame.mouse.get_pos()):
-                return True
-        return False
-
-
-
-
 # Main game class
 class Game:
 
-    # Level mit Grafiken
-    def draw_level(self):
-        # Lösche den gesamten Bildschirm
-        self.screen.fill(self.BG_COLOR)
 
-        # Liste der Grafiken für den Level-Indikator
-        level_images = [
-            pygame.image.load("./items/fuel.png").convert_alpha(),
-            pygame.image.load("./items/fuel.png").convert_alpha(),
-            pygame.image.load("./items/fuel.png").convert_alpha(),
-        ]
-
-        # Anzahl der verbleibenden Leben
-        remaining_lives = 3 - len(self.enemies_collided)
-
-        # Grafiken skalieren
-        scaled_width = 50
-        scaled_height = 50
-
-        # verbleibende Level Grafiken zeichnen
-        for i in range(remaining_lives):
-            # Skalieren
-            scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
-            # Zeichne skalierte Grafik
-            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
 
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
@@ -313,6 +255,46 @@ class Game:
         # Spawn an initial car
         self.spawn_car()
 
+    # Level mit Grafiken
+    def draw_level(self):
+        # Lösche den gesamten Bildschirm
+        self.screen.fill(self.BG_COLOR)
+
+        # Liste der Grafiken für den Level-Indikator
+        level_images = [
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+            pygame.image.load("./items/fuel.png").convert_alpha(),
+        ]
+
+        # Anzahl der verbleibenden Leben
+        remaining_lives = 3 - len(self.enemies_collided)
+
+        # Grafiken skalieren
+        scaled_width = 50
+        scaled_height = 50
+
+        # verbleibende Level Grafiken zeichnen
+        for i in range(remaining_lives):
+            # Skalieren
+            scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
+            # Zeichne skalierte Grafik
+            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
+
+
+    def fade_to_black(self, duration=2000):
+        fade_surface = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
+        fade_surface.fill((0, 0, 0))
+
+        for alpha in range(0, 256//4):
+            fade_surface.set_alpha(alpha)
+            self.screen.blit(fade_surface, (0, 0))
+            pygame.display.update()
+            pygame.time.delay(duration // (256//4))  # Total duration divided by number of alpha increments
+
+        # At this point, the screen is completely black.
+
+
     def will_collide(self, new_enemy_rect):
         buffer_space = 20  # 20 pixels buffer, you can adjust
         for enemy in self.enemies:
@@ -451,12 +433,11 @@ class Game:
 
         # load vroom file
         self.vroom = pygame.mixer.Sound("./sounds/vroom.wav")
-        self.vroom.set_volume(0.5)
+        self.vroom.set_volume(1)
 
     # start_screen sound play
     def play_soundtrack(self):
         pygame.mixer.Channel(5).play(self.soundtrack, loops=-1)  # sound plays forever // extra channel
-        self.soundtrack.play()
 
     # stop soundtrack
     def stop_soundtrack(self):
@@ -474,7 +455,7 @@ class Game:
         self.start_button_sound.play()
 
     # stop start_screen sound
-    def stop_start_screen_sound(self, fadeout_time=1):
+    def stop_start_screen_sound(self, fadeout_time=1000):
         # Stoppt den Sound auf Kanal 2 (der Hintergrundmusik-Kanal)
         pygame.mixer.Channel(2).fadeout(fadeout_time)
 
@@ -493,6 +474,11 @@ class Game:
         pygame.mixer.Channel(5).play(self.vroom) # mixer setting to play sounds on different channels
         self.vroom.play()
 
+    # Stopping all sounds - Needed to add this as there still was overlapping
+    def stop_all_sounds(self):
+        pygame.mixer.stop()
+
+
     # Start screen state - start screen loop
     def start_screen(self):
         self.stop_soundtrack()
@@ -504,8 +490,15 @@ class Game:
                     exit()  
                 # The start screen loop will terminate, when the start button is clicked - this will bring the player to the main game loop (follow code)
                 if self.start_button.is_clicked(event):
+
+                    # Remove collided enemies for next game
+                    self.enemies_collided.clear()
+
                     self.stop_start_screen_sound()
-                    self.play_start_button_sound() # Aufruf des start button
+                    self.play_vroom()
+                    self.fade_to_black(duration=1200)
+                    # self.play_start_button_sound() # Aufruf des start button
+                    self.stop_all_sounds()
                     self.start_time = pygame.time.get_ticks() # Start time of main game
                     self.state = self.main_game
                     return
@@ -672,8 +665,7 @@ class Game:
                     if len(self.enemies_collided) < 3:
                         self.enemies_collided.append(enemy)
                     if len(self.enemies_collided) == 3:
-                        # Remove collided enemies for next game
-                        self.enemies_collided.clear()
+
                         # Change display mode, set is_fullscreen to False and update game state
                         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
                         self.is_fullscreen = False
@@ -699,8 +691,7 @@ class Game:
                     if len(self.enemies_collided) < 3:
                         self.enemies_collided.append(bike)
                     if len(self.enemies_collided) == 3:
-                        # Remove collided enemies for next game
-                        self.enemies_collided.clear()
+
                         # Change display mode, set is_fullscreen to False and update game state
                         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
                         self.is_fullscreen = False
@@ -754,6 +745,37 @@ class Bike:
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
 
+
+# Defining a Button class to use buttons in the start screen and also the game screen
+# I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
+# - might need to take another look later
+class Button:
+    def __init__(self, x, y, text, font_size=80, 
+                 font_color=(0, 0, 0), hover_color=(255, 255, 255)):
+        self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
+        self.text = text
+        self.colors = {'default': font_color, 'hover': hover_color}
+        self.current_color = 'default'
+        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
+        self.rect = self.text_img.get_rect(center=(x, y))
+
+    def draw(self, surface):
+        # Update color based on hover state
+        self.current_color = 'hover' if self.is_hovered(pygame.mouse.get_pos()) else 'default'
+        self.text_img = self.font.render(self.text, True, self.colors[self.current_color])
+        surface.blit(self.text_img, self.rect)
+
+    def is_hovered(self, pos):
+        return self.rect.collidepoint(pos)
+
+    def move(self, new_x, new_y):
+        self.rect.center = (new_x, new_y)
+
+    def is_clicked(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.is_hovered(pygame.mouse.get_pos()):
+                return True
+        return False
 
 # Running the game
 game = Game()
