@@ -660,11 +660,11 @@ class Game:
             else:
                 self.quit_button.move(50, self.ACTUAL_SCREEN_HEIGHT // 8 + 30)
 
-            # Collision detection
+            # Collision detection for enemy cars
             for enemy in self.enemies:
                 if self.player_rect.colliderect(enemy["rect"]):
                     self.play_collision()
-                    self.stop_soundtrack() # stops soundtrack
+                    self.stop_soundtrack()
                     print("GAME OVER")
 
                     # Reduziere die verbleibenden Leben bei einer Kollision
@@ -680,11 +680,21 @@ class Game:
                     self.enemies.remove(enemy)
                     self.spawn_car()
 
-            self.night_day_transition()
-
-
-            # Testing bikes
+            # Collision detection and movement of enemy bikes
             for bike in self.bikes:
+
+                if self.player_rect.colliderect(bike.rect):
+                    self.play_collision()
+                    self.stop_soundtrack()
+                    print("GAME OVER")
+
+                    # Reduziere die verbleibenden Leben bei einer Kollision
+                    if len(self.enemies_collided) < 3:
+                        self.enemies_collided.append(bike)
+                    if len(self.enemies_collided) == 3:
+                        self.state = self.start_screen
+                    return
+
                 bike.animate()
                 bike.move()
                 bike.draw(self.screen)
@@ -693,6 +703,8 @@ class Game:
                 if bike.rect.right < 0:
                     self.bikes.remove(bike)
 
+            # Night and day transition
+            self.night_day_transition()
 
             pygame.display.update()
             self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
@@ -720,9 +732,11 @@ class Bike:
             self.current_image = (self.current_image + 1) % len(self.images)
             self.image = self.images[self.current_image]
             self.animation_time = pygame.time.get_ticks()
+            # self.rect.size = self.image.get_size()
 
     def move(self):
-        self.rect.x -= self.speed
+        self.x -= self.speed
+        self.rect.x = self.x  # Update the rect's position
 
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
