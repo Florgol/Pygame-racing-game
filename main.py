@@ -303,6 +303,7 @@ class Game:
         self.player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
         self.player_acceleration = self.PLAYER_ACCELERATION  # Beschleunigung
 
+        # Remove eneemy cars and bikes
         self.enemies = []
         self.bikes = []
 
@@ -671,7 +672,13 @@ class Game:
                     if len(self.enemies_collided) < 3:
                         self.enemies_collided.append(enemy)
                     if len(self.enemies_collided) == 3:
+                        # Remove collided enemies for next game
+                        self.enemies_collided.clear()
+                        # Change display mode, set is_fullscreen to False and update game state
+                        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
+                        self.is_fullscreen = False
                         self.state = self.start_screen
+                    # We have to return, as we don't want to loose all lives at once
                     return
 
             # Handle enemy off-screen and spawning
@@ -692,7 +699,13 @@ class Game:
                     if len(self.enemies_collided) < 3:
                         self.enemies_collided.append(bike)
                     if len(self.enemies_collided) == 3:
+                        # Remove collided enemies for next game
+                        self.enemies_collided.clear()
+                        # Change display mode, set is_fullscreen to False and update game state
+                        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
+                        self.is_fullscreen = False
                         self.state = self.start_screen
+                    # We have to return, as we don't want to loose all lives at once
                     return
 
                 bike.animate()
