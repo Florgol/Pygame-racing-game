@@ -97,8 +97,8 @@ class Game:
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 
         # Minimum and maximum car position - invisible borders that the car can not cross
-        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8
-        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 -10
+        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + 30
+        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 -10 - 15
         self.MIN_X = 0
         self.MAX_X = self.ACTUAL_SCREEN_WIDTH
 
@@ -433,7 +433,7 @@ class Game:
 
         # load vroom file
         self.vroom = pygame.mixer.Sound("./sounds/vroom.wav")
-        self.vroom.set_volume(1)
+        self.vroom.set_volume(0.5)
 
     # start_screen sound play
     def play_soundtrack(self):
