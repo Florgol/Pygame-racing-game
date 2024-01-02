@@ -316,15 +316,18 @@ class Game:
         remaining_lives = 3 - len(self.enemies_collided)
 
         # Grafiken skalieren
-        scaled_width = 50
-        scaled_height = 50
+        scaled_width = 40
+        scaled_height = 40
+
+        # Distance from left screen border
+        distance = 20
 
         # verbleibende Level Grafiken zeichnen
         for i in range(remaining_lives):
             # Skalieren
             scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
             # Zeichne skalierte Grafik
-            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
+            self.screen.blit(scaled_image, (distance + i * (scaled_width + 10), 45))
 
 
     def fade_to_black(self, duration=2000):
