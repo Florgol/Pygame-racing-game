@@ -234,8 +234,8 @@ class Game:
             for i in range(1, 4)  # 3 bike animation images
         ]
 
-        # Loading pedestrian images
-        self.pedestrian_animation_images = [
+        # Loading pedestrian images (1 and 2)
+        self.pedestrian1_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
                     pygame.image.load(f"enemies/pedestrian1_animation/pedestrian1_{i}.png").convert_alpha(),
@@ -245,6 +245,17 @@ class Game:
             )
             for i in range(1, 4)  # 3 pedestrian animation images
         ]
+
+        self.pedestrian2_animation_images = [
+            pygame.transform.scale(
+                pygame.transform.rotate(
+                    pygame.image.load(f"enemies/pedestrian2_animation/pedestrian2_{i}.png").convert_alpha(),
+                    90
+                ),
+                (self.PEDESTRIAN_WIDTH, self.PEDESTRIAN_HEIGHT)
+            )
+            for i in range(1, 4)  # 3 pedestrian animation images
+        ]  
 
         # self.enemy_image = random.choice(self.enemy_images)
         # self.enemy_rect = self.enemy_image.get_rect()
@@ -371,8 +382,12 @@ class Game:
         self.play_bike_sound()  # Aufruf des bike spawn sounds
 
     def spawn_pedestrian(self):
+
+        # Randomly choose between the two types of pedestrians
+        chosen_pedestrian_images = random.choice([self.pedestrian1_animation_images, self.pedestrian2_animation_images])
+    
         # Position the pedestrian off the screen to the right
-        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes), random.choice([3.2, 3.3, 3.5]), self.pedestrian_animation_images)
+        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
 
 
