@@ -12,8 +12,6 @@ pygame.mixer.init()
 # Main game class
 class Game:
 
-
-
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
     BG_COLOR = (0, 0, 0)
@@ -35,6 +33,10 @@ class Game:
     # Enemy bike sizes
     BIKE_WIDTH = 80
     BIKE_HEIGHT = 42
+
+    # Enemy pedestrian sizes
+    PEDESTRIAN_WIDTH = 67
+    PEDESTRIAN_HEIGHT = 30
 
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
@@ -96,6 +98,14 @@ class Game:
         info = pygame.display.Info()
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 
+        # Enemy cars, bikes an pedestrians (list to keep track of all on screen)
+        self.enemies = []
+        self.bikes = []
+        self.pedestrians = []
+
+        # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
+        self.last_pedestrian_spawn_time = None
+
         # Minimum and maximum car position - invisible borders that the car can not cross
         self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + 30
         self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 -10 - 15
@@ -113,6 +123,11 @@ class Game:
         self.bike_lanes_fullscreen = [
             self.ACTUAL_SCREEN_HEIGHT // 3 - 70,
             self.ACTUAL_SCREEN_HEIGHT // 3 + 395
+        ]
+
+        self.side_walk_lanes = [
+            self.ACTUAL_SCREEN_HEIGHT // 3 - 145,
+            self.ACTUAL_SCREEN_HEIGHT // 3 + 480
         ]
 
         # Tracking game time
@@ -204,7 +219,7 @@ class Game:
                 ),
                 (self.ENEMY_WIDTH_CAR, self.ENEMY_HEIGHT_CAR)
             )
-            for i in range(1, 5)  # We assume to have 4 enemy car pictures
+            for i in range(1, 5)  # We assume to have 4 enemy car images - this is subject to change when new cars are added
         ]
 
         # Loading bike images
@@ -216,7 +231,19 @@ class Game:
                 ),
                 (self.BIKE_WIDTH, self.BIKE_HEIGHT)
             )
-            for i in range(1, 4)  # Assuming you have 3 bike images
+            for i in range(1, 4)  # 3 bike animation images
+        ]
+
+        # Loading pedestrian images
+        self.pedestrian_animation_images = [
+            pygame.transform.scale(
+                pygame.transform.rotate(
+                    pygame.image.load(f"enemies/pedestrian1_animation/pedestrian1_{i}.png").convert_alpha(),
+                    90
+                ),
+                (self.PEDESTRIAN_WIDTH, self.PEDESTRIAN_HEIGHT)
+            )
+            for i in range(1, 4)  # 3 pedestrian animation images
         ]
 
         # self.enemy_image = random.choice(self.enemy_images)
@@ -248,6 +275,13 @@ class Game:
         # Remove eneemy cars and bikes
         self.enemies = []
         self.bikes = []
+        self.pedestrians = []
+
+        # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
+        self.last_bike_spawn_time = pygame.time.get_ticks()
+
+        # Initializing self.last_pedestrian_spawn_time for spawning pedestrians every x milisecs
+        self.last_pedestrian_spawn_time = pygame.time.get_ticks()
 
         # self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         # self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
@@ -336,7 +370,29 @@ class Game:
         # sound for spawning bike
         self.play_bike_sound()  # Aufruf des bike spawn sounds
 
+    def spawn_pedestrian(self):
+        # Position the pedestrian off the screen to the right
+        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes), random.choice([3.2, 3.3, 3.5]), self.pedestrian_animation_images)
+        self.pedestrians.append(new_pedestrian)
 
+
+    def handle_collision(self, collided_with):
+        self.play_collision()
+        self.stop_soundtrack()
+        print("GAME OVER")
+
+        # Reduziere die verbleibenden Leben bei einer Kollision
+        self.enemies_collided.append(collided_with)
+
+    def is_game_over(self):
+        if len(self.enemies_collided) == 3:
+            return True
+
+    def change_to_start_screen(self):
+        # Change display mode, set is_fullscreen to False and update game state
+        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
+        self.is_fullscreen = False
+        self.state = self.start_screen
 
     def night_day_transition(self):
 
@@ -526,8 +582,7 @@ class Game:
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
         self.initialize_behaviour()
 
-        # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
-        self.last_bike_spawn_time = pygame.time.get_ticks()
+
 
         # Tankanzeige
         self.tank_width = 300
@@ -620,8 +675,18 @@ class Game:
             # Drawing player car
             self.screen.blit(self.player_image, self.player_rect)
 
+            # Moving, animating and removing pedestrians
+            for pedestrian in self.pedestrians:
+                pedestrian.animate()
+                pedestrian.move()
+                pedestrian.draw(self.screen)    
+            
+                # Removing pedestrians
+                if pedestrian.rect.right < 0:
+                        self.pedestrians.remove(pedestrian)
+
             # We are drawing the trees in the same fashion as the background - 2 times
-            # But after the player car to create a layered effect
+            # But after the player car and the pedestrians to create a layered effect
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
                 if self.is_fullscreen:
                     y = self.ACTUAL_SCREEN_HEIGHT // 8
@@ -634,6 +699,10 @@ class Game:
             if current_time_for_car_spawn - self.last_spawn_time >= 3000:  # 3 seconds
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
+            
+            # Drawing enemy cars
+            for enemy in self.enemies:
+                self.screen.blit(enemy["image"], enemy["rect"])
 
             # Spawning bikes
             current_time_for_bike_spawn = pygame.time.get_ticks()
@@ -641,10 +710,11 @@ class Game:
                 self.spawn_bike()
                 self.last_bike_spawn_time = current_time_for_bike_spawn
       
-
-            # Drawing enemy cars
-            for enemy in self.enemies:
-                self.screen.blit(enemy["image"], enemy["rect"])
+            # Spawning pedestrians
+            current_time_for_pedestrian_spawn = pygame.time.get_ticks()
+            if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= 6000:  # 6 seconds
+                self.spawn_pedestrian()
+                self.last_pedestrian_spawn_time = current_time_for_pedestrian_spawn
 
 
             # Moving the button around based on screen size
@@ -683,20 +753,14 @@ class Game:
             for bike in self.bikes:
 
                 if self.player_rect.colliderect(bike.rect):
-                    self.play_collision()
-                    self.stop_soundtrack()
-                    print("GAME OVER")
 
-                    # Reduziere die verbleibenden Leben bei einer Kollision
-                    if len(self.enemies_collided) < 3:
-                        self.enemies_collided.append(bike)
-                    if len(self.enemies_collided) == 3:
+                    self.handle_collision(bike)
+                    
+                    if (self.is_game_over()):
+                        self.change_to_start_screen()
 
-                        # Change display mode, set is_fullscreen to False and update game state
-                        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
-                        self.is_fullscreen = False
-                        self.state = self.start_screen
-                    # We have to return, as we don't want to loose all lives at once
+                    # We have to return the main game loop after one collision detection, 
+                    # as we dont want to loose all lives
                     return
 
                 bike.animate()
@@ -706,6 +770,21 @@ class Game:
                 # Remove bikes that are out of the screen
                 if bike.rect.right < 0:
                     self.bikes.remove(bike)
+
+            # Collision detection for pedestrians
+            for pedestrian in self.pedestrians:
+                if self.player_rect.colliderect(pedestrian.rect):
+
+                    self.handle_collision(pedestrian)
+                    
+                    if (self.is_game_over()):
+                        self.change_to_start_screen()
+
+                    # We have to return the main game loop after one collision detection, 
+                    # as we dont want to loose all lives
+                    return
+            
+
 
             # Night and day transition
             self.night_day_transition()
@@ -741,6 +820,33 @@ class Bike:
     def move(self):
         self.x -= self.speed
         self.rect.x = self.x  # Update the rect's position
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+
+# Pedestrian class
+class Pedestrian:
+    def __init__(self, x, y, speed, pedestrian_animation_images):
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.images = pedestrian_animation_images
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        self.animation_time = pygame.time.get_ticks()
+
+    def animate(self):
+        # Animation speed is 200ms
+        if pygame.time.get_ticks() - self.animation_time > 200:  
+            self.current_image = (self.current_image + 1) % len(self.images)
+            self.image = self.images[self.current_image]
+            self.animation_time = pygame.time.get_ticks()
+
+    def move(self):
+        self.x -= self.speed
+        self.rect.x = self.x
 
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
