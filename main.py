@@ -207,11 +207,11 @@ class Game:
             for i in range(1, 5)  # We assume to have 4 enemy car pictures
         ]
 
-
+        # Loading bike images
         self.bike_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
-                    pygame.image.load(f"bike1_animation/bike1_animation_part{i}.png").convert_alpha(),
+                    pygame.image.load(f"enemies/bike1_animation/bike1_animation_part{i}.png").convert_alpha(),
                     90
                 ),
                 (self.BIKE_WIDTH, self.BIKE_HEIGHT)
