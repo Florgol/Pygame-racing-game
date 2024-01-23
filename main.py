@@ -18,25 +18,15 @@ class Game:
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
 
-    # Background size
-    BACKGROUND_WIDTH = 3200
-    BACKGROUND_HEIGHT = 800
 
-    # Player size
-    PLAYER_WIDTH = 110
-    PLAYER_HEIGHT = 55
 
-    # Enemy car sizes
-    ENEMY_WIDTH_CAR = 110
-    ENEMY_HEIGHT_CAR = 55
 
-    # Enemy bike sizes
-    BIKE_WIDTH = 80
-    BIKE_HEIGHT = 42
 
-    # Enemy pedestrian sizes
-    PEDESTRIAN_WIDTH = 67
-    PEDESTRIAN_HEIGHT = 30
+
+
+
+
+
 
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
@@ -49,6 +39,8 @@ class Game:
     # Night day transition
     NIGHT_DAY_CYCLE = 20000 # More milisecs, means longer day/night
     TRANSITION_SPEED = 8000 # Less milisecs, means faster transition
+
+    # Not being used right now - START
 
     # Car lanes y positions for windowed mode
     car_lanes_windowed = [
@@ -63,6 +55,8 @@ class Game:
         SCREEN_HEIGHT // 3 - 80,
         SCREEN_HEIGHT // 3 + 380
     ]
+
+    # Not being used right now - END
 
     # Resources
     transition_images = []
@@ -98,6 +92,57 @@ class Game:
         info = pygame.display.Info()
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 
+        # Here we create a unit, that is dependent on the actual screen dimension - 1 percent of screen
+        # Why? : We ran into trouble testing the game on other screens and the elements were all over the place
+        # How does it work? : You have to use int(5*self.perc_W) to get a value that correlates with 5 percent screen width
+        self.perc_H = self.ACTUAL_SCREEN_HEIGHT / 100
+        self.perc_W = self.ACTUAL_SCREEN_WIDTH / 100
+
+        # Background size
+        self.BACKGROUND_WIDTH = int(180*self.perc_W)
+        self.BACKGROUND_HEIGHT = int(75*self.perc_H)
+
+        # Player size
+        self.PLAYER_WIDTH = int(5.9*self.perc_W)
+        self.PLAYER_HEIGHT = int(5*self.perc_H)
+
+        # Enemy car sizes
+        self.ENEMY_WIDTH_CAR = int(5.9*self.perc_W)
+        self.ENEMY_HEIGHT_CAR = int(5*self.perc_H)
+
+        # Enemy bike sizes
+        self.BIKE_WIDTH = int(4.2*self.perc_W)
+        self.BIKE_HEIGHT = int(3.4*self.perc_H)
+
+        # Enemy pedestrian sizes
+        self.PEDESTRIAN_WIDTH = int(3.5*self.perc_W)
+        self.PEDESTRIAN_HEIGHT = int(3*self.perc_H)
+
+        # Minimum and maximum car position - invisible borders that the car can not cross
+        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H)
+        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2*self.perc_H)
+        self.MIN_X = 0
+        self.MAX_X = self.ACTUAL_SCREEN_WIDTH
+
+        # Position of car lanes
+        self.car_lanes_fullscreen = [
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(2.5*self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(12*self.perc_H),    
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(21.5*self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(31*self.perc_H)    
+        ]
+
+        self.bike_lanes_fullscreen = [
+            self.ACTUAL_SCREEN_HEIGHT // 3 - int(6.5*self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(38*self.perc_H)
+        ]
+
+        self.side_walk_lanes = [
+            self.ACTUAL_SCREEN_HEIGHT // 3 - int(14.5*self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(45*self.perc_H)
+        ]
+
+
         # Enemy cars, bikes an pedestrians (list to keep track of all on screen)
         self.enemies = []
         self.bikes = []
@@ -106,29 +151,7 @@ class Game:
         # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
         self.last_pedestrian_spawn_time = None
 
-        # Minimum and maximum car position - invisible borders that the car can not cross
-        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + 30
-        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 -10 - 15
-        self.MIN_X = 0
-        self.MAX_X = self.ACTUAL_SCREEN_WIDTH
 
-
-        self.car_lanes_fullscreen = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 20,
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 125,    
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 230,
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 335    
-        ]
-
-        self.bike_lanes_fullscreen = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 - 70,
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 395
-        ]
-
-        self.side_walk_lanes = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 - 145,
-            self.ACTUAL_SCREEN_HEIGHT // 3 + 480
-        ]
 
         # Tracking game time
         self.start_time = pygame.time.get_ticks()
@@ -316,18 +339,18 @@ class Game:
         remaining_lives = 3 - len(self.enemies_collided)
 
         # Grafiken skalieren
-        scaled_width = 40
-        scaled_height = 40
+        scaled_width = int(2.5*self.perc_W)
+        scaled_height = int(4*self.perc_H)
 
         # Distance from left screen border
-        distance = 20
+        distance = int(2*self.perc_W)
 
         # verbleibende Level Grafiken zeichnen
         for i in range(remaining_lives):
             # Skalieren
             scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
             # Zeichne skalierte Grafik
-            self.screen.blit(scaled_image, (distance + i * (scaled_width + 10), 45))
+            self.screen.blit(scaled_image, (distance + i * (scaled_width + int(0.5*self.perc_W)), int(4*self.perc_H)))
 
 
     def fade_to_black(self, duration=2000):
@@ -361,7 +384,8 @@ class Game:
         attempts = 5 # Using a maximum number of attempts to avoid endless loop when screen is crowded
 
         for _ in range(attempts):
-            enemy_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
+            # Slighty randomizing Y spawn position
+            enemy_rect.centery = random.choice(self.car_lanes_fullscreen) + random.randint(- int(2*self.perc_H), int(2*self.perc_H)) if self.is_fullscreen else random.choice(self.car_lanes_windowed)
             if not self.will_collide(enemy_rect):
                 enemy_speed = self.ENEMY_SPEED
                 self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
@@ -371,7 +395,7 @@ class Game:
     def load_bike_sound(self):
         # load bike sound
         self.bike_sound = pygame.mixer.Sound("./sounds/bike.wav")
-        self.bike_sound.set_volume(0.15)
+        self.bike_sound.set_volume(0.1)
 
     def play_bike_sound(self):
         self.bike_sound.play()
@@ -379,7 +403,8 @@ class Game:
 
     def spawn_bike(self):
         # Position the bike off the screen to the right
-        new_bike = Bike(self.ACTUAL_SCREEN_WIDTH +50, random.choice(self.bike_lanes_fullscreen), random.randint(4, 6), self.bike_animation_images)
+        # Also slighty randomizing Y spawn position
+        new_bike = Bike(self.ACTUAL_SCREEN_WIDTH +50, random.choice(self.bike_lanes_fullscreen) + random.randint(-int(0.7*self.perc_H), int(0.7*self.perc_H)), random.randint(4, 6), self.bike_animation_images)
         self.bikes.append(new_bike)
         # sound for spawning bike
         self.play_bike_sound()  # Aufruf des bike spawn sounds
@@ -390,7 +415,8 @@ class Game:
         chosen_pedestrian_images = random.choice([self.pedestrian1_animation_images, self.pedestrian2_animation_images])
     
         # Position the pedestrian off the screen to the right
-        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
+        # Also slighty randomizing Y spawn position
+        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
 
 
@@ -684,10 +710,7 @@ class Game:
             # We are drawing the current background 2 times
             # One time at bg_x and one time at bg_x + self.current_background.get_width())
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
-                if self.is_fullscreen:
-                    y = self.ACTUAL_SCREEN_HEIGHT // 8
-                else:
-                    y = 0
+                y = self.ACTUAL_SCREEN_HEIGHT // 8
                 self.screen.blit(self.current_background, (x, y))
 
             # Drawing player car
@@ -737,10 +760,7 @@ class Game:
 
             # Moving the button around based on screen size
             self.quit_button.draw(self.screen)
-            if not self.is_fullscreen:
-                self.quit_button.move(50, 30)
-            else:
-                self.quit_button.move(50, self.ACTUAL_SCREEN_HEIGHT // 8 + 30)
+            self.quit_button.move(int(2.5*self.perc_W), self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H))
 
             # Collision detection for enemy cars
             for enemy in self.enemies:
