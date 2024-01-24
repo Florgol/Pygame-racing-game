@@ -6,7 +6,7 @@ import time
 # Initialisierung von Pygame
 pygame.init()
 print(pygame.mixer.get_init())
-pygame.mixer.init()
+pygame.mixer.init(64)
 
 
 # Main game class
@@ -37,6 +37,7 @@ class Game:
     CAR_SPAWN_TIME = 3000
     BIKE_SPAWN_TIME = 10000
     PEDESTRIAN_SPAWN_TIME = 6000
+#    FUEL_CANISTER_SPAWN_TIME = 8000
 
     # Wave Time
     WAVE_TIME = TRANSITION_SPEED*10
@@ -121,6 +122,10 @@ class Game:
         self.PEDESTRIAN_WIDTH = int(3.5*self.perc_W)
         self.PEDESTRIAN_HEIGHT = int(3*self.perc_H)
 
+        # Fuel Canisters sizes
+#        self.FUEL_CANISTER_WIDTH = int(2 * self.perc_W)
+#        self.FUEL_CANISTER_HEIGHT = int(2 * self.perc_H)
+
         # Minimum and maximum car position - invisible borders that the car can not cross
         self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H)
         self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2*self.perc_H)
@@ -150,9 +155,13 @@ class Game:
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
+#        self.fuel_canister = []
 
         # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
         self.last_pedestrian_spawn_time = None
+
+        # Fuel Canister spawn time - used to spawn a Fuel canister every x milisecs
+#        self.last_fuel_canister_spawn_time = None
 
         # Tracking game time
         self.start_time = pygame.time.get_ticks()
@@ -166,7 +175,6 @@ class Game:
 
         # Initiate screen - start screen is windowed
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
-
 
         # Initiate game surface - this works together with "screen" and "scale_factor" to switch between fullscreen and windowed
         self.game_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
@@ -277,6 +285,7 @@ class Game:
             for i in range(1, 4)  # 3 pedestrian animation images
         ]
 
+
         self.pedestrian2_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
@@ -287,6 +296,7 @@ class Game:
             )
             for i in range(1, 4)  # 3 pedestrian animation images
         ]  
+
 
         # self.enemy_image = random.choice(self.enemy_images)
         # self.enemy_rect = self.enemy_image.get_rect()
@@ -322,12 +332,17 @@ class Game:
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
+#        self.fuel_canister = []
 
         # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
         self.last_bike_spawn_time = pygame.time.get_ticks()
 
         # Initializing self.last_pedestrian_spawn_time for spawning pedestrians every x milisecs
         self.last_pedestrian_spawn_time = pygame.time.get_ticks()
+
+        # Initializing self.last_fuel_spawn_time for spawning fuel every x milisecs
+        self.last_fuel_spawn_time = pygame.time.get_ticks()
+
 
         # self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
         # self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
@@ -431,6 +446,15 @@ class Game:
         self.bike_sound.play()
         pygame.mixer.Channel(1).play(self.bike_sound)
 
+    def load_pedestrian_sound(self):
+            # load bike sound
+            self.pedestrian_sound = pygame.mixer.Sound("./sounds/walking.wav")
+            self.pedestrian_sound.set_volume(0.2)
+
+    def play_pedestrian_sound(self):
+        self.pedestrian_sound.play()
+        pygame.mixer.Channel(1).play(self.pedestrian_sound)
+
     def spawn_bike(self):
         # Position the bike off the screen to the right
         # Also slighty randomizing Y spawn position
@@ -448,6 +472,7 @@ class Game:
         # Also slighty randomizing Y spawn position
         new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
+        self.play_pedestrian_sound() # walking sound with spawning a pedestrian
 
 
     def handle_collision(self, collided_with):
@@ -455,7 +480,7 @@ class Game:
         self.stop_soundtrack()
         print("GAME OVER")
 
-        # Reduziere die verbleibenden Leben bei einer Kollision
+        # reduce fuel tank for collision (3 total)
         self.enemies_collided.append(collided_with)
 
     def is_game_over(self):
@@ -564,6 +589,10 @@ class Game:
         self.vroom = pygame.mixer.Sound("./sounds/vroom.wav")
         self.vroom.set_volume(0.5)
 
+        # load scream for pedestrian when being hit
+        self.scream = pygame.mixer.Sound("./sounds/scream.wav")
+        self.scream.set_volume(0.5)
+
     # start_screen sound play
     def play_soundtrack(self):
         pygame.mixer.Channel(5).play(self.soundtrack, loops=-1)  # sound plays forever // extra channel
@@ -602,6 +631,11 @@ class Game:
     def play_vroom(self):
         pygame.mixer.Channel(5).play(self.vroom) # mixer setting to play sounds on different channels
         self.vroom.play()
+
+    def play_scream_sound(self):
+        pygame.mixer.Channel(7).play(self.scream)
+        self.scream.play()
+
 
     # Stopping all sounds - Needed to add this as there still was overlapping
     def stop_all_sounds(self):
@@ -826,7 +860,6 @@ class Game:
                 self.spawn_pedestrian()
                 self.last_pedestrian_spawn_time = current_time_for_pedestrian_spawn
 
-
             # Moving the button around based on screen size
             self.quit_button.draw(self.screen)
             self.quit_button.move(int(2.5*self.perc_W), self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H))
@@ -840,6 +873,7 @@ class Game:
 
                     # We have to return, as we don't want to loose all lives at once
                     return
+
 
             # Updating the state of the wave - either the wave is on or not
             self.update_state_of_wave()
@@ -885,7 +919,9 @@ class Game:
                 if self.player_rect.colliderect(pedestrian.rect):
 
                     self.handle_collision(pedestrian)
-                    
+                    self.play_pedestrian_sound() ################################# change to scream
+                    ###############################################################
+                    self.play_scream_sound() ################################
                     self.is_game_over()
 
                     # We have to return the main game loop after one collision detection, 
@@ -960,6 +996,26 @@ class Pedestrian:
         screen.blit(self.image, self.rect.topleft)
 
 
+    # Fuel Canister class
+    class Canister:
+        def __init__(self, x, y, speed):
+            self.x = x
+            self.y = y
+            self.speed = speed
+            self.current_image = 0
+            self.image = self.images[self.current_image]
+            self.rect = self.image.get_rect(topleft=(self.x, self.y))
+            self.animation_time = pygame.time.get_ticks()
+
+        def move(self):
+            self.x -= self.speed
+            self.rect.x = self.x
+
+        def draw(self, screen):
+            screen.blit(self.image, self.rect.topleft)
+
+
+
 # Defining a Button class to use buttons in the start screen and also the game screen
 # I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
 # - might need to take another look later
@@ -994,6 +1050,8 @@ class Button:
 # Running the game
 game = Game()
 game.load_bike_sound() # load spawn bike sound
+game.load_pedestrian_sound() # loads walking sound for pedestrians
+
 game.run()
 
 
