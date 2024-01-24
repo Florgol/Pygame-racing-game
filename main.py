@@ -18,6 +18,9 @@ class Game:
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
 
+    # Game over screen sizes
+    GAME_OVER_SCREEN_WIDTH, GAME_OVER_SCREEN_HEIGHT = 1200, 800
+
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
     ENEMY_SPEED = 2
@@ -81,6 +84,7 @@ class Game:
 
     # start screen
     start_screen_image = None
+    game_over_screen_image = None
 
     # fullscreen
     is_fullscreen = True
@@ -172,7 +176,11 @@ class Game:
         self.quit_button_start_screen = Button(self.SCREEN_WIDTH // 2 - 18, self.SCREEN_HEIGHT // 2 + 60, "Quit", font_size=55)
 
         # Buttons for ingame
-        self.quit_button = Button(50, 30, "Quit", font_size=40) 
+        self.quit_button = Button(50, 30, "Quit", font_size=40)
+
+        # Buttons for game over screen
+        self.continue_button = Button(self.SCREEN_WIDTH // 2 + 310 , self.SCREEN_HEIGHT // 2 + 110, "CONTINUE", font_size=70)
+        self.quit_button_game_over_screen = Button(self.SCREEN_WIDTH // 2 - 260, self.SCREEN_HEIGHT // 2 +110, "QUIT", font_size=60)
 
         # pygame.display.set_caption("ESA_3")
 
@@ -289,9 +297,13 @@ class Game:
         self.player_image = pygame.transform.scale(self.player_image, (self.PLAYER_WIDTH, self.PLAYER_HEIGHT)) # Scaling
         self.player_rect = self.player_image.get_rect()
 
+        # Preparing the start screen image
         self.start_screen_image = pygame.image.load("start_screen3.png").convert()
         self.start_screen_image = pygame.transform.scale(self.start_screen_image, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
 
+        # Preparing the game over screen image
+        self.game_over_screen_image = pygame.image.load("game_over_screen_image.png").convert()
+        self.game_over_screen_image = pygame.transform.scale(self.game_over_screen_image, (self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT))
 
     def initialize_behaviour(self):
 
@@ -448,7 +460,10 @@ class Game:
 
     def is_game_over(self):
         if len(self.enemies_collided) == 3:
-            return True
+            self.screen = pygame.display.set_mode((self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT), pygame.NOFRAME)
+            self.is_fullscreen = False
+            self.state = self.game_over_screen
+            return
 
     def change_to_start_screen(self):
         # Change display mode, set is_fullscreen to False and update game state
@@ -613,7 +628,7 @@ class Game:
                     self.fade_to_black(duration=1200)
                     # self.play_start_button_sound() # Aufruf des start button
                     self.stop_all_sounds()
-                    self.start_time = pygame.time.get_ticks() # Start time of main game
+                    self.start_time = pygame.time.get_ticks() # Start time of main game, used for night day cycle
                     self.wave_cycle_start_time = pygame.time.get_ticks() # Also start time of game, but used for wave cycle
                     self.state = self.main_game
                     return
@@ -633,6 +648,44 @@ class Game:
             self.quit_button_start_screen.draw(self.screen)
             pygame.display.update()
 
+    def game_over_screen(self):
+        self.stop_all_sounds()  # Stop all sounds
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                
+                # The game over screen loop will terminate, when the continue button is clicked - this will bring the player to the main game loop (follow code)
+                if self.continue_button.is_clicked(event):
+
+                    # Remove collided enemies for next game
+                    self.enemies_collided.clear()
+
+                    self.stop_start_screen_sound()
+                    self.play_vroom()
+                    self.fade_to_black(duration=1200)
+                    # self.play_start_button_sound() # Aufruf des start button
+                    self.stop_all_sounds()
+                    self.start_time = pygame.time.get_ticks() # Start time of main game, used for night day cycle
+                    self.wave_cycle_start_time = pygame.time.get_ticks() # Also start time of game, but used for wave cycle
+                    self.state = self.main_game
+                    return
+                # The window will be closed when the quit button is pressed
+                if self.quit_button_game_over_screen.is_clicked(event):
+                    self.play_quit_button_sound() # Aufruf des start button sounds
+
+                    ### delay damit der sound abgespielt wird bevor das fenster schließt
+                    time.sleep(1)
+                    # exit game / start screen
+                    pygame.quit()
+                    sys.exit()
+
+            # Drawing
+            self.screen.blit(self.game_over_screen_image, (0, 0))
+            self.continue_button.draw(self.screen)
+            self.quit_button_game_over_screen.draw(self.screen)
+            pygame.display.update()
 
     # This is the main game state - main game loop
     def main_game(self):
@@ -781,19 +834,10 @@ class Game:
             # Collision detection for enemy cars
             for enemy in self.enemies:
                 if self.player_rect.colliderect(enemy["rect"]):
-                    self.play_collision()
-                    self.stop_soundtrack()
-                    print("GAME OVER")
+                    self.handle_collision(enemy)
 
-                    # Reduziere die verbleibenden Leben bei einer Kollision
-                    if len(self.enemies_collided) < 3:
-                        self.enemies_collided.append(enemy)
-                    if len(self.enemies_collided) == 3:
+                    self.is_game_over()
 
-                        # Change display mode, set is_fullscreen to False and update game state
-                        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
-                        self.is_fullscreen = False
-                        self.state = self.start_screen
                     # We have to return, as we don't want to loose all lives at once
                     return
 
@@ -812,7 +856,7 @@ class Game:
                         if random.random() < 0.95:
                             self.spawn_car()
                     else:
-                        if random.random() < 0.6:
+                        if random.random() < 0.3:
                             self.spawn_car()
 
             # Collision detection and movement of enemy bikes
@@ -822,8 +866,7 @@ class Game:
 
                     self.handle_collision(bike)
                     
-                    if (self.is_game_over()):
-                        self.change_to_start_screen()
+                    self.is_game_over()
 
                     # We have to return the main game loop after one collision detection, 
                     # as we dont want to loose all lives
@@ -843,8 +886,7 @@ class Game:
 
                     self.handle_collision(pedestrian)
                     
-                    if (self.is_game_over()):
-                        self.change_to_start_screen()
+                    self.is_game_over()
 
                     # We have to return the main game loop after one collision detection, 
                     # as we dont want to loose all lives
