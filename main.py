@@ -593,6 +593,11 @@ class Game:
         self.scream = pygame.mixer.Sound("./sounds/scream.wav")
         self.scream.set_volume(0.5)
 
+        # load scream for pedestrian when being hit
+        self.scream2 = pygame.mixer.Sound("./sounds/scream2.mp3")
+        self.scream2.set_volume(0.5)
+        
+
     # start_screen sound play
     def play_soundtrack(self):
         pygame.mixer.Channel(5).play(self.soundtrack, loops=-1)  # sound plays forever // extra channel
@@ -633,8 +638,14 @@ class Game:
         self.vroom.play()
 
     def play_scream_sound(self):
-        pygame.mixer.Channel(7).play(self.scream)
-        self.scream.play()
+        
+        
+        if random.random() > 0.2:
+            pygame.mixer.Channel(7).play(self.scream)
+            self.scream.play()
+        else:
+            pygame.mixer.Channel(7).play(self.scream2)
+            self.scream2.play()
 
 
     # Stopping all sounds - Needed to add this as there still was overlapping
