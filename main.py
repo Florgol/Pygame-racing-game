@@ -18,7 +18,6 @@ class Game:
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
 
-
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
     ENEMY_SPEED = 2
@@ -28,8 +27,17 @@ class Game:
     PLAYER_SPEED_MIN = -5
 
     # Night day transition
-    NIGHT_DAY_CYCLE = 20000 # More milisecs, means longer day/night
+    HIGH_NOON_TIME = 20000 # More milisecs, means longer day/night
     TRANSITION_SPEED = 8000 # Less milisecs, means faster transition
+
+    # Enemy Spawning timers
+    CAR_SPAWN_TIME = 3000
+    BIKE_SPAWN_TIME = 10000
+    PEDESTRIAN_SPAWN_TIME = 6000
+
+    # Wave Time
+    WAVE_TIME = TRANSITION_SPEED*10
+    WAVE_DOWN_TIME = TRANSITION_SPEED*1
 
     # Not being used right now - START
 
@@ -142,10 +150,11 @@ class Game:
         # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
         self.last_pedestrian_spawn_time = None
 
-
-
         # Tracking game time
         self.start_time = pygame.time.get_ticks()
+
+        # Is there a wave at the moment?
+        self.wave = True
 
         # Important for night to day transition and reverse transition
         self.transition_start_time = None
@@ -176,7 +185,7 @@ class Game:
         # Enemies collision list
         self.enemies_collided = []  # Hier die Liste initialisieren
 
-    # Game clock
+        # Game clock
         self.clock = pygame.time.Clock()
         
         self.load_resources()
@@ -365,6 +374,24 @@ class Game:
                 return True
         return False
 
+    def update_state_of_wave(self):
+        current_time = pygame.time.get_ticks()
+        # We initialize wave_cycle_start_time when the player presses the start button
+        elapsed_time = current_time - self.wave_cycle_start_time
+
+        # Once the wave time and wave down time is over, we reset wave_cycle_start_time -> infinite loop
+        # Also we reset wave to True
+        if elapsed_time >= self.WAVE_TIME + self.WAVE_DOWN_TIME:
+            self.wave = True
+            print("wave is on")
+            self.wave_cycle_start_time = current_time
+
+        # When we reach the end of the WAVE_TIME the wave is over
+        elif self.WAVE_TIME + 100 > elapsed_time >= self.WAVE_TIME:
+            self.wave = False
+            print("wave is off")
+
+
 
     def spawn_car(self):
         enemy_image = random.choice(self.enemy_images)
@@ -372,7 +399,7 @@ class Game:
 
         enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
         enemy_rect.centerx += 50 # Adding cars a bit outside of screen, so they drive in
-        attempts = 5 # Using a maximum number of attempts to avoid endless loop when screen is crowded
+        attempts = 10 # Using a maximum number of attempts to avoid endless loop when screen is crowded
 
         for _ in range(attempts):
             # Slighty randomizing Y spawn position
@@ -434,9 +461,9 @@ class Game:
         # Keeping track of time
         elapsed_time = pygame.time.get_ticks() - self.start_time
 
-        # After "NIGHT_DAY_CYCLE" milliseconds of daytime driving, we start the transition
+        # After "HIGH_NOON_TIME" milliseconds of daytime driving, we start the transition
         # We give elapsed_time a window due to the inprecision of .get_ticks()
-        if self.NIGHT_DAY_CYCLE <= elapsed_time < self.NIGHT_DAY_CYCLE + 6000 and self.transition_start_time is None:
+        if self.HIGH_NOON_TIME <= elapsed_time < self.HIGH_NOON_TIME + 6000 and self.transition_start_time is None:
             self.transition_start_time = pygame.time.get_ticks()
 
         # We keep track of when the transition started
@@ -587,6 +614,7 @@ class Game:
                     # self.play_start_button_sound() # Aufruf des start button
                     self.stop_all_sounds()
                     self.start_time = pygame.time.get_ticks() # Start time of main game
+                    self.wave_cycle_start_time = pygame.time.get_ticks() # Also start time of game, but used for wave cycle
                     self.state = self.main_game
                     return
                 # The window will be closed when the quit button is pressed
@@ -725,7 +753,7 @@ class Game:
 
             # Spawing cars
             current_time_for_car_spawn = pygame.time.get_ticks()
-            if current_time_for_car_spawn - self.last_spawn_time >= 3000:  # 3 seconds
+            if current_time_for_car_spawn - self.last_spawn_time >= self.CAR_SPAWN_TIME:
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
             
@@ -735,13 +763,13 @@ class Game:
 
             # Spawning bikes
             current_time_for_bike_spawn = pygame.time.get_ticks()
-            if current_time_for_bike_spawn - self.last_bike_spawn_time >= 10000:  # 10 seconds
+            if current_time_for_bike_spawn - self.last_bike_spawn_time >= self.BIKE_SPAWN_TIME:
                 self.spawn_bike()
                 self.last_bike_spawn_time = current_time_for_bike_spawn
       
             # Spawning pedestrians
             current_time_for_pedestrian_spawn = pygame.time.get_ticks()
-            if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= 6000:  # 6 seconds
+            if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= self.PEDESTRIAN_SPAWN_TIME:
                 self.spawn_pedestrian()
                 self.last_pedestrian_spawn_time = current_time_for_pedestrian_spawn
 
@@ -769,11 +797,23 @@ class Game:
                     # We have to return, as we don't want to loose all lives at once
                     return
 
+            # Updating the state of the wave - either the wave is on or not
+            self.update_state_of_wave()
+
             # Handle enemy off-screen and spawning
+            # When an enemy car leaves the screen there is a 90% chance it will respawn during wave
             for enemy in self.enemies:
                 if enemy["rect"].right < 0:
                     self.enemies.remove(enemy)
-                    self.spawn_car()
+
+                    # The respawn rate when an enemy car leaves the screen is much less, when there is no wave right now
+                    # This gives the player time to breath
+                    if self.wave:
+                        if random.random() < 0.95:
+                            self.spawn_car()
+                    else:
+                        if random.random() < 0.6:
+                            self.spawn_car()
 
             # Collision detection and movement of enemy bikes
             for bike in self.bikes:
