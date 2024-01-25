@@ -5,6 +5,7 @@ import time
 
 # Initialisierung von Pygame
 pygame.init()
+pygame.font.init()
 print(pygame.mixer.get_init())
 pygame.mixer.init(64)
 
@@ -17,9 +18,14 @@ class Game:
     BG_COLOR = (0, 0, 0)
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
+    BLACK = (0,0,0)
 
     # Game over screen sizes
     GAME_OVER_SCREEN_WIDTH, GAME_OVER_SCREEN_HEIGHT = 1200, 800
+
+    # Timer font size
+    TIMER_FONT_SIZE = 80
+    HIGH_SCORE_FONT_SIZE = 160
 
     # Added constants to control game speed in one place
     BACKGROUND_SPEED = 3
@@ -95,6 +101,13 @@ class Game:
     # Infos about the actual screen size of user
         info = pygame.display.Info()
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
+
+        # Font for timer
+        self.font_timer = pygame.font.Font('fonts/Pixeltype.ttf', self.TIMER_FONT_SIZE)
+        self.font_high_score = pygame.font.Font('fonts/Pixeltype.ttf', self.HIGH_SCORE_FONT_SIZE)
+
+        # High Score - the final timer string
+        self.high_score = None
 
         # Here we create a unit, that is dependent on the actual screen dimension - 1 percent of screen
         # Why? : We ran into trouble testing the game on other screens and the elements were all over the place
@@ -370,14 +383,14 @@ class Game:
         scaled_height = int(4*self.perc_H)
 
         # Distance from left screen border
-        distance = int(2*self.perc_W)
+        distance = int(3*self.perc_W)
 
         # verbleibende Level Grafiken zeichnen
         for i in range(remaining_lives):
             # Skalieren
             scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
             # Zeichne skalierte Grafik
-            self.screen.blit(scaled_image, (distance + i * (scaled_width + int(0.5*self.perc_W)), int(4*self.perc_H)))
+            self.screen.blit(scaled_image, (distance + i * (scaled_width + int(0.5*self.perc_W)), int(6.5*self.perc_H)))
 
 
     def fade_to_black(self, duration=2000):
@@ -476,12 +489,33 @@ class Game:
 
 
     def handle_collision(self, collided_with):
+        self.high_score = self.get_timer_string()
         self.play_collision()
         self.stop_soundtrack()
         print("GAME OVER")
 
         # reduce fuel tank for collision (3 total)
         self.enemies_collided.append(collided_with)
+
+    def get_timer_string(self):
+        elapsed_time = pygame.time.get_ticks() - self.timer_start_time
+        seconds = elapsed_time // 1000
+        minutes = seconds // 60
+        hours = minutes // 60
+        seconds %= 60
+        minutes %= 60
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    def display_timer(self):
+        timer_string = self.get_timer_string()
+        timer_surface = self.font_timer.render(timer_string, True, self.WHITE)
+        self.screen.blit(timer_surface, (int(85*self.perc_W), int(7*self.perc_H)))
+    
+    def display_high_score(self):
+        timer_surface = self.font_high_score.render(self.high_score, True, self.BLACK)
+        self.screen.blit(timer_surface, (int(20*self.perc_W), int(7*self.perc_H)))
+
+ 
 
     def is_game_over(self):
         if len(self.enemies_collided) == 3:
@@ -675,6 +709,7 @@ class Game:
                     self.stop_all_sounds()
                     self.start_time = pygame.time.get_ticks() # Start time of main game, used for night day cycle
                     self.wave_cycle_start_time = pygame.time.get_ticks() # Also start time of game, but used for wave cycle
+                    self.timer_start_time = pygame.time.get_ticks() # Used for timer
                     self.state = self.main_game
                     return
                 # The window will be closed when the quit button is pressed
@@ -714,6 +749,7 @@ class Game:
                     self.stop_all_sounds()
                     self.start_time = pygame.time.get_ticks() # Start time of main game, used for night day cycle
                     self.wave_cycle_start_time = pygame.time.get_ticks() # Also start time of game, but used for wave cycle
+                    self.timer_start_time = pygame.time.get_ticks() # Used for timer
                     self.state = self.main_game
                     return
                 # The window will be closed when the quit button is pressed
@@ -730,6 +766,7 @@ class Game:
             self.screen.blit(self.game_over_screen_image, (0, 0))
             self.continue_button.draw(self.screen)
             self.quit_button_game_over_screen.draw(self.screen)
+            self.display_high_score()
             pygame.display.update()
 
     # This is the main game state - main game loop
@@ -772,6 +809,8 @@ class Game:
                             self.player_rect.centery -= self.ACTUAL_SCREEN_HEIGHT // 8
                             for enemy in self.enemies:
                                 enemy["rect"].centery -= self.ACTUAL_SCREEN_HEIGHT // 8
+
+
 
             # Bewegung des Spielers
             keys = pygame.key.get_pressed()
@@ -943,6 +982,9 @@ class Game:
 
             # Night and day transition
             self.night_day_transition()
+
+            # Displaying timer
+            self.display_timer()
 
             pygame.display.update()
             self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
