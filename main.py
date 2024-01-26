@@ -12,7 +12,6 @@ pygame.mixer.init(64)
 
 # Main game class
 class Game:
-
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
     BG_COLOR = (0, 0, 0)
@@ -94,6 +93,10 @@ class Game:
 
     # fullscreen
     is_fullscreen = True
+
+
+
+
 
 
     def __init__(self):
@@ -203,18 +206,29 @@ class Game:
         self.last_spawn_time = pygame.time.get_ticks()
 
         # Enemies collision list
-        self.enemies_collided = []  # Hier die Liste initialisieren
+        self.enemies_collided = []  # initialisieren
 
         # Game clock
         self.clock = pygame.time.Clock()
         
         self.load_resources()
 
+        ##### CANISTER ######
 
+        self.remaining_lives = 3
+        self.collected_canisters = 0
+        self.last_canister_spawn_time = 0
+        self.canisters = []
 
     def load_resources(self):
         # Lade Sounds
         self.load_sound()
+        canister_images = [
+            pygame.transform.scale(
+                pygame.image.load("./items/fuel.png").convert_alpha(), (50, 50))
+        ]
+
+        self.canister_images = canister_images
 
         # Loading background images 
         self.transition_images = [
@@ -336,6 +350,7 @@ class Game:
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
+        self.canisters = []
 
         # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
         self.last_bike_spawn_time = pygame.time.get_ticks()
@@ -353,34 +368,59 @@ class Game:
         # Spawn an initial car
         self.spawn_car()
 
-    # Level mit Grafiken
-    def draw_level(self):
-        # Lösche den gesamten Bildschirm
-        self.screen.fill(self.BG_COLOR)
 
-        # Liste der Grafiken für den Level-Indikator
+
+
+######### neu ##############
+
+    def draw_fuel_display(self):
         level_images = [
             pygame.image.load("./items/fuel.png").convert_alpha(),
             pygame.image.load("./items/fuel.png").convert_alpha(),
             pygame.image.load("./items/fuel.png").convert_alpha(),
         ]
 
-        # Anzahl der verbleibenden Leben
-        remaining_lives = 3 - len(self.enemies_collided)
+        # fuel.png wird zur Liste hinzugefügt, wenn KAnister eingesammelt wird
+        if self.collected_canisters > 0:
+            level_images.extend([pygame.image.load("./items/fuel.png").convert_alpha()] * self.collected_canisters)
 
-        # Grafiken skalieren
-        scaled_width = int(2.5*self.perc_W)
-        scaled_height = int(4*self.perc_H)
+        scaled_width = 50
+        scaled_height = 50
 
-        # Distance from left screen border
-        distance = int(3*self.perc_W)
+        for i in range(len(level_images)):
+            fuel_image = level_images[i]
+            scaled_image = pygame.transform.scale(fuel_image, (scaled_width, scaled_height))
+            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
 
-        # verbleibende Level Grafiken zeichnen
-        for i in range(remaining_lives):
-            # Skalieren
-            scaled_image = pygame.transform.scale(level_images[i], (scaled_width, scaled_height))
-            # Zeichne skalierte Grafik
-            self.screen.blit(scaled_image, (distance + i * (scaled_width + int(0.5*self.perc_W)), int(6.5*self.perc_H)))
+
+    def draw_level(self):
+        self.screen.fill(self.BG_COLOR)
+
+        self.draw_fuel_display()  # Methode wird aufgerufen
+
+        scaled_width = 50
+        scaled_height = 50
+
+        # remaining lives
+        for i in range(self.remaining_lives):
+            fuel_image = pygame.image.load("./items/fuel.png").convert_alpha()
+            scaled_image = pygame.transform.scale(fuel_image, (scaled_width, scaled_height))
+            self.screen.blit(scaled_image, (i * (scaled_width + 10), 10))
+
+        # collected the canister?
+        for canister in self.canisters:
+            if self.player_rect.colliderect(canister["rect"]) and not canister.get("collected", False):
+                print("Canister eingesammelt!")
+                canister["collected"] = True
+                self.remaining_lives += 1  # add a canister
+
+        # Remove collected canisters from the list
+        self.canisters = [canister for canister in self.canisters if not canister.get("collected", False)]
+
+
+
+
+
 
 
     def fade_to_black(self, duration=2000):
@@ -438,6 +478,24 @@ class Game:
                 enemy_speed = self.ENEMY_SPEED
                 self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
                 break
+
+
+
+
+    def spawn_canister(self):
+        canister_image = random.choice(self.canister_images)
+        canister_rect = canister_image.get_rect()
+
+        canister_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
+        canister_rect.centerx += 50
+        canister_rect.centery = random.randint(50, self.ACTUAL_SCREEN_HEIGHT - 50) if self.is_fullscreen else random.randint(0, self.SCREEN_HEIGHT)
+
+        canister_speed = 5
+        self.canisters.append({"image": canister_image, "rect": canister_rect, "speed": canister_speed, "collected": False})
+
+
+
+
 
     # load sound for spawning bike
     def load_bike_sound(self):
@@ -508,7 +566,7 @@ class Game:
  
 
     def is_game_over(self):
-        if len(self.enemies_collided) == 1:  # Info für Florian: Die Variable muss noch geändert werden, sodass es zum Aufsammeln der Tanks passt
+        if len(self.enemies_collided) == self.remaining_lives:
             self.screen = pygame.display.set_mode((self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT), pygame.NOFRAME)
             self.is_fullscreen = False
             self.state = self.game_over_screen
@@ -726,6 +784,16 @@ class Game:
             self.quit_button_start_screen.draw(self.screen)
             pygame.display.update()
 
+
+            # Kollision mit Canistern
+            for canister in self.canisters:
+                if self.player_rect.colliderect(canister["rect"]) and not canister.get("collected", False):
+                    # Interaction with canister
+                    print("Canister eingesammelt!")
+                    self.remaining_lives += 1  # Increase remaining lives
+                    canister["collected"] = True  # Markiere den Kanister als eingesammelt
+                    print(self.remaining_lives)
+
     def game_over_screen(self):
         self.stop_all_sounds()  # Stop all sounds
         self.game_over_screen_sound.play()
@@ -846,6 +914,10 @@ class Game:
                 enemy["rect"].centerx -= enemy["speed"]
 
 
+
+
+
+
             # Bewegung des Hintergrundbilds
             self.bg_x -= self.BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
 
@@ -892,7 +964,29 @@ class Game:
             if current_time_for_car_spawn - self.last_spawn_time >= self.CAR_SPAWN_TIME:
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
-            
+
+
+            # Zeichne Canister
+            for canister in self.canisters:
+                canister["rect"].centerx -= canister["speed"]
+                if not canister.get("collected", False):
+                    self.screen.blit(canister["image"], canister["rect"])
+
+
+
+            # Spawne Canister
+            current_time_for_canister_spawn = pygame.time.get_ticks()
+            if current_time_for_canister_spawn - self.last_canister_spawn_time >= 8000:  # 8 Sekunden , kann zum Testen verkleinert werden!
+                self.spawn_canister()
+                self.last_canister_spawn_time = current_time_for_canister_spawn
+
+            # Entferne Canister, die aus dem Bildschirm verschwunden sind
+            self.canisters = [canister for canister in self.canisters if canister["rect"].right > 0]
+
+
+
+
+
             # Drawing enemy cars
             for enemy in self.enemies:
                 self.screen.blit(enemy["image"], enemy["rect"])
