@@ -43,7 +43,6 @@ class Game:
     CAR_SPAWN_TIME = 3000
     BIKE_SPAWN_TIME = 10000
     PEDESTRIAN_SPAWN_TIME = 6000
-#    FUEL_CANISTER_SPAWN_TIME = 8000
 
     # Wave Time
     WAVE_TIME = TRANSITION_SPEED*10
@@ -135,10 +134,6 @@ class Game:
         self.PEDESTRIAN_WIDTH = int(3.5*self.perc_W)
         self.PEDESTRIAN_HEIGHT = int(3*self.perc_H)
 
-        # Fuel Canisters sizes
-#        self.FUEL_CANISTER_WIDTH = int(2 * self.perc_W)
-#        self.FUEL_CANISTER_HEIGHT = int(2 * self.perc_H)
-
         # Minimum and maximum car position - invisible borders that the car can not cross
         self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H)
         self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2*self.perc_H)
@@ -168,13 +163,9 @@ class Game:
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
-#        self.fuel_canister = []
 
         # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
         self.last_pedestrian_spawn_time = None
-
-        # Fuel Canister spawn time - used to spawn a Fuel canister every x milisecs
-#        self.last_fuel_canister_spawn_time = None
 
         # Tracking game time
         self.start_time = pygame.time.get_ticks()
@@ -345,7 +336,6 @@ class Game:
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
-#        self.fuel_canister = []
 
         # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
         self.last_bike_spawn_time = pygame.time.get_ticks()
@@ -518,7 +508,7 @@ class Game:
  
 
     def is_game_over(self):
-        if len(self.enemies_collided) == 3:
+        if len(self.enemies_collided) == 1:  # Info für Florian: Die Variable muss noch geändert werden, sodass es zum Aufsammeln der Tanks passt
             self.screen = pygame.display.set_mode((self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT), pygame.NOFRAME)
             self.is_fullscreen = False
             self.state = self.game_over_screen
@@ -599,6 +589,10 @@ class Game:
 
     # Start Screen sound
     def load_sound(self):
+        # load game over screen sound
+        self.game_over_screen_sound = pygame.mixer.Sound("./sounds/game_over.wav")
+        self.game_over_screen_sound.set_volume(0.7)
+
         # load start screen sound
         self.start_screen_sound = pygame.mixer.Sound("./sounds/start_screen.wav")
         self.start_screen_sound.set_volume(0.2)
@@ -631,6 +625,10 @@ class Game:
         self.scream2 = pygame.mixer.Sound("./sounds/scream2.mp3")
         self.scream2.set_volume(0.5)
         
+
+    # start game over sound
+    def play_game_over_screen_sound(self):
+        pygame.mixer.Channel(6).play(self.game_over_screen_sound, loops=-1) # plays forever as long as being stuck in the game over screen
 
     # start_screen sound play
     def play_soundtrack(self):
@@ -730,6 +728,7 @@ class Game:
 
     def game_over_screen(self):
         self.stop_all_sounds()  # Stop all sounds
+        self.game_over_screen_sound.play()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -1047,25 +1046,6 @@ class Pedestrian:
 
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
-
-
-    # Fuel Canister class
-    class Canister:
-        def __init__(self, x, y, speed):
-            self.x = x
-            self.y = y
-            self.speed = speed
-            self.current_image = 0
-            self.image = self.images[self.current_image]
-            self.rect = self.image.get_rect(topleft=(self.x, self.y))
-            self.animation_time = pygame.time.get_ticks()
-
-        def move(self):
-            self.x -= self.speed
-            self.rect.x = self.x
-
-        def draw(self, screen):
-            screen.blit(self.image, self.rect.topleft)
 
 
 
