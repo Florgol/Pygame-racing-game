@@ -6,9 +6,7 @@ import time
 # Initialisierung von Pygame
 pygame.init()
 pygame.font.init()
-print(pygame.mixer.get_init())
 pygame.mixer.init(64)
-
 
 # Main game class
 class Game:
@@ -399,6 +397,7 @@ class Game:
 
             print("Picked up canister!")
             self.remaining_lives += 1  # add a canister/live
+            self.canister_sound.play()
             self.canisters.remove(canister)
 
 
@@ -468,11 +467,14 @@ class Game:
 
 
 
-
-
-
-
-
+    # load canister sound (picking up a canister)
+    def load_canister_sound(self):
+        self.canister_sound = pygame.mixer.Sound("./sounds/canister.wav")
+        self.canister_sound.set_volume(0.5)
+     # play canister sound
+    def play_canister_sound(self):
+        self.canister_sound.play()
+        pygame.mixer.Channel(5).play(self.canister_sound)
 
 
     # load sound for spawning bike
@@ -1168,7 +1170,7 @@ class Button:
 game = Game()
 game.load_bike_sound() # load spawn bike sound
 game.load_pedestrian_sound() # loads walking sound for pedestrians
-
+game.load_canister_sound()
 game.run()
 
 
