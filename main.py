@@ -1,3 +1,44 @@
+"""
+This script implements a dynamic, interactive car-racing arcade game, using Pygame. 
+
+The game features a player-controlled car, 
+dynamic enemy spawns (cars, bikes, pedestrians), fuel canisters for gaining additional lives, 
+and a day-to-night transition effect to enhance visual appeal. 
+Key functionalities include collision detection, object movement and animation, and sound effect 
+management. 
+
+The game operates across different screens (start, main game, game over).
+These can be accessed by changing the self.state attribute. 
+So our run() method with the "main game loop" looks like this:
+    def run(self):
+    while True:
+        self.state()
+
+Any calculation of length is done with our own unit(s): self.perc_H and self.perc_W
+These units represent 1% of the user's actual screen height/width.
+This unit is a floating point number and when actually using this unit, 
+it has to be multiplied by the wanted percentage, and converted to int (for precision).
+Example: int(11*self.perc_H) will return the amount of pixels for 11% of the screen in int.
+
+Key Classes:
+    - Game: Manages the main game logic, screen updates, and game states.
+    - Pedestrian, Bike, Canister: Handle specific game objects' behaviors and rendering.
+    - Button: Facilitates interactive button elements in the game's UI.
+
+The script initializes Pygame, sets up game constants (for tweaking), attributes, loads rescources, and runs the main game loop. 
+
+We have a bunch of functionality in our main_game() method. 
+We update object positions, handle user inputs, render the game screen, spawn and remove enemies, 
+handle collision logic and keep track of high score and remaining lives.
+
+While a lot of this behaviour is abstracted into methods,
+there still is potential for more abstraction and refactoring.
+Not only for these methods, but across the board.
+
+Authors: Florian Goldbach, Christian Gerhold
+Requires: Pygame library
+"""
+
 import pygame
 import sys
 import random
@@ -49,6 +90,8 @@ class Game:
     WAVE_TIME = TRANSITION_SPEED*10
     WAVE_DOWN_TIME = TRANSITION_SPEED*1
 
+
+    """
     # Not being used right now - START
 
     # Car lanes y positions for windowed mode
@@ -66,6 +109,7 @@ class Game:
     ]
 
     # Not being used right now - END
+    """
 
     # Resources
     transition_images = []
@@ -85,21 +129,12 @@ class Game:
     player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
     player_acceleration = 0
 
-    #
-    # enemy_rect = None
-    # enemy_speed = 0
-
     # start screen
     start_screen_image = None
     game_over_screen_image = None
 
     # fullscreen
     is_fullscreen = True
-
-
-
-
-
 
     def __init__(self):
     # Infos about the actual screen size of user
@@ -954,11 +989,6 @@ class Game:
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
 
-
-
-
-
-
             # Drawing enemy cars
             for enemy in self.enemies:
                 self.screen.blit(enemy["image"], enemy["rect"])
@@ -1060,6 +1090,68 @@ class Game:
             self.state()
 
 
+# Pedestrian class
+class Pedestrian:
+    """
+    Class for a pedestrian character object.
+
+    This class manages the pedestrian's position, movement, and animation.
+    We update the pedestrian's animation image (which is the animation).
+    We can move the pedestrian across the screen, and draw the pedestrian on a specified surface.
+
+    Args:
+        x (int): initial x-coordinate of the pedestrian's position.
+        y (int): initial y-coordinate of the pedestrian's position.
+        speed (int): The speed at which the pedestrian will move.
+        pedestrian_animation_images (list): A list of pygame.Surface objects representing the animation frames (will be 3 images).
+
+    Attributes:
+        x (int): x-coordinate of the pedestrian's position.
+        y (int): y-coordinate of the pedestrian's position.
+        speed (int): The speed at which the pedestrian moves.
+        images (list): A list of images for the pedestrian's animation.
+        current_image (int): The index of the current image in the animation sequence.
+        image (pygame.Surface): The current image of the pedestrian.
+        rect (pygame.Rect): The rectangle area of the pedestrian (position and size).
+        animation_time (int): Timestamp of the last animation frame update.
+
+    Methods:
+        animate(): Updates the pedestrian's animation frame.
+        move(): Moves the pedestrian based on the current speed.
+        draw(screen): Draws the pedestrian on the given screen (pygame.Surface).
+    
+    Author:
+        Florian Goldbach
+    """
+    def __init__(self, x, y, speed, pedestrian_animation_images):
+        self.x = x
+        self.y = y
+        self.speed = speed
+        self.images = pedestrian_animation_images
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        self.animation_time = pygame.time.get_ticks()
+
+    def animate(self):
+        # Animation speed is 200ms
+        if pygame.time.get_ticks() - self.animation_time > 200:  
+            self.current_image = (self.current_image + 1) % len(self.images)
+            self.image = self.images[self.current_image]
+            self.animation_time = pygame.time.get_ticks()
+
+    def move(self):
+        self.x -= self.speed
+        self.rect.x = self.x
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+
+# The Bike class is analogous to the Pedestrian class.
+# The Bike and the Pedestrian class do the same thing.
+# I did not use inheritance, but there is opportunity here.
+# Author: Florian Goldbach
 class Bike:
     def __init__(self, x, y, speed, bike_animation_images):
         self.x = x
@@ -1088,36 +1180,34 @@ class Bike:
 
 
 
-
-# Pedestrian class
-class Pedestrian:
-    def __init__(self, x, y, speed, pedestrian_animation_images):
-        self.x = x
-        self.y = y
-        self.speed = speed
-        self.images = pedestrian_animation_images
-        self.current_image = 0
-        self.image = self.images[self.current_image]
-        self.rect = self.image.get_rect(topleft=(self.x, self.y))
-        self.animation_time = pygame.time.get_ticks()
-
-    def animate(self):
-        # Animation speed is 200ms
-        if pygame.time.get_ticks() - self.animation_time > 200:  
-            self.current_image = (self.current_image + 1) % len(self.images)
-            self.image = self.images[self.current_image]
-            self.animation_time = pygame.time.get_ticks()
-
-    def move(self):
-        self.x -= self.speed
-        self.rect.x = self.x
-
-    def draw(self, screen):
-        screen.blit(self.image, self.rect.topleft)
-
-
 # Canister Class
 class Canister:
+    """
+    Class for a canister object.
+
+    This class manages the canister's position and movement.
+    We can move the canister across the screen, and draw the canister on a specified surface.
+
+    Args:
+        x (int): initial x-coordinate of the canister's position.
+        y (int): initial y-coordinate of the canister's position.
+        speed (int): The speed at which the canister will move.
+        image (pygame.Surface): A pygame.Surface object - image of the canister.
+
+    Attributes:
+        x (int): x-coordinate of the canister's position.
+        y (int): y-coordinate of the canister's position.
+        speed (int): The speed at which the canister will move.
+        image (pygame.Surface): A pygame.Surface object - image of the canister.
+        rect (pygame.Rect): The rectangle area of the canister.
+
+    Methods:
+        move(): Moves the canister based on the current speed.
+        draw(screen): Draws the canister on the given screen (pygame.Surface).
+    
+    Author:
+        Florian Goldbach
+    """
     def __init__(self, x, y, speed, image):
         self.x = x
         self.y = y
@@ -1133,10 +1223,38 @@ class Canister:
         screen.blit(self.image, self.rect.topleft)
 
 
-# Defining a Button class to use buttons in the start screen and also the game screen
-# I am not sure if the color strategy (hover_color, initial_color, font_color) is the most efficient, but it does work for now
-# - might need to take another look later
 class Button:
+    """
+    Class for a customizable button object.
+
+    This is a button that can display text and respond to mouse events. 
+    The button changes color when hovered over. 
+    We can move it to different positions and detect mouse clicks.
+
+    Args:
+        x (int): x-coordinate of the button's center.
+        y (int): y-coordinate of the button's center.
+        text (str): The text to be displayed on the button.
+        font_size (int, optional): The font size of the button text (default is 80).
+        font_color (tuple, optional): The default color of the button text (RGB-tuple) (default is black (0, 0, 0)).
+        hover_color (tuple, optional): The color of the button text when hovered over (RGB-tuple) (default is white (255, 255, 255)).
+
+    Attributes:
+        font (pygame.font.Font): Font used for the button text.
+        text (str): Text displayed on the button.
+        colors (dict): Colors the button, including 'default' and 'hover' colors.
+        current_color (str): The current color state of the button, either 'default' or 'hover'.
+        text_img (pygame.Surface): The rendered image of the text.
+        rect (pygame.Rect): The rectangle of the button (position and size).
+
+    Methods:
+        draw(surface): Draws the button on the specified surface.
+        is_hovered(pos): Checks if the given position (mouse position) is on top of the button.
+        move(new_x, new_y): Moves the button to a new position.
+        is_clicked(event): Determines if the button is clicked based on a given Pygame event.
+    
+    Author: Florian Goldbach
+    """
     def __init__(self, x, y, text, font_size=80, 
                  font_color=(0, 0, 0), hover_color=(255, 255, 255)):
         self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
