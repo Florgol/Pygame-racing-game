@@ -35,6 +35,9 @@ While a lot of this behaviour is abstracted into methods,
 there still is potential for more abstraction and refactoring.
 Not only for these methods, but across the board.
 
+Additional Remarks: The sequence in which elements are drawn in the main_game() method is important. 
+We use this to create a layered effect, in which elements seem to be passing underneath the tree tops.
+
 Authors: Florian Goldbach, Christian Gerhold
 Requires: Pygame library
 """
@@ -435,13 +438,37 @@ class Game:
             self.canister_sound.play()
             self.canisters.remove(canister)
 
-
-
     def spawn_canister(self):
 
         new_canister = Canister(self.ACTUAL_SCREEN_WIDTH + 50, random.randint(self.MIN_Y, self.MAX_Y - int(3*self.perc_H)), random.choice([7, 8, 9]), self.canister_image)
         self.canisters.append(new_canister)
 
+
+    def handle_canister_behaviour(self):
+
+        # Drawing, moving, collecting, removing canisters
+        for canister in self.canisters:
+            canister.draw(self.screen)
+            canister.move()
+
+            if self.player_rect.colliderect(canister.rect):
+                self.handle_canister_collision(canister)
+
+            # Remove canisters that are out of the screen
+            if canister.rect.right < 0:
+                self.canisters.remove(canister)
+    
+
+    def handle_pedestrian_behaviour(self):
+
+        for pedestrian in self.pedestrians:
+            pedestrian.animate()
+            pedestrian.move()
+            pedestrian.draw(self.screen)    
+        
+            # Removing pedestrians
+            if pedestrian.rect.right < 0:
+                    self.pedestrians.remove(pedestrian)
 
 
     def fade_to_black(self, duration=2000):
@@ -755,6 +782,38 @@ class Game:
             pygame.mixer.Channel(7).play(self.scream2)
             self.scream2.play()
 
+    # Author: Christian Gerhold
+    # Manages acceleration and speed calculation
+    def player_input_speed_calculation(self):    
+        # Bewegung des Spielers
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            self.player_speed_y -= self.player_acceleration  # Beschleunigen nach oben
+            # sound
+        elif keys[pygame.K_DOWN]:
+            self.player_speed_y += self.player_acceleration  # Beschleunigen nach unten
+            # sound
+        else:
+            if self.player_speed_y > 0:
+                self.player_speed_y -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
+            elif self.player_speed_y < 0:
+                self.player_speed_y += self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
+
+        if keys[pygame.K_LEFT]:
+            self.player_speed_x -= self.player_acceleration  # Beschleunigen nach links
+            # sound
+        elif keys[pygame.K_RIGHT]:
+            self.player_speed_x += self.player_acceleration  # Beschleunigen nach rechts
+            #self.play_vroom()
+        else:
+            if self.player_speed_x > 0:
+                self.player_speed_x -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
+            elif self.player_speed_x < 0:
+                self.player_speed_x += self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
+
+        # Begrenze die Geschwindigkeit, um zu verhindern, dass sie zu groß wird
+        self.player_speed_y = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_y))
+        self.player_speed_x = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_x))
 
     # Stopping all sounds - Needed to add this as there still was overlapping
     def stop_all_sounds(self):
@@ -859,11 +918,15 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-                # Testing the button
+                # The QUIT button returns the player to the start screen (windowed mode)
                 if self.quit_button.is_clicked(event):
                     self.state = self.start_screen
                     self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
                     return
+                
+                """
+                # Not being used right now - START
+
                 # Testing fullscreen toggle
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_f:
@@ -881,145 +944,108 @@ class Game:
                             for enemy in self.enemies:
                                 enemy["rect"].centery -= self.ACTUAL_SCREEN_HEIGHT // 8
 
+                # Not being used right now - END
+                """
 
+            # Draw remaining lives
+            self.draw_level()
 
-            # Bewegung des Spielers
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_UP]:
-                self.player_speed_y -= self.player_acceleration  # Beschleunigen nach oben
-                # sound
-            elif keys[pygame.K_DOWN]:
-                self.player_speed_y += self.player_acceleration  # Beschleunigen nach unten
-                # sound
-            else:
-                if self.player_speed_y > 0:
-                    self.player_speed_y -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
-                elif self.player_speed_y < 0:
-                    self.player_speed_y += self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
-
-            if keys[pygame.K_LEFT]:
-                self.player_speed_x -= self.player_acceleration  # Beschleunigen nach links
-                # sound
-            elif keys[pygame.K_RIGHT]:
-                self.player_speed_x += self.player_acceleration  # Beschleunigen nach rechts
-                #self.play_vroom()
-            else:
-                if self.player_speed_x > 0:
-                    self.player_speed_x -= self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
-                elif self.player_speed_x < 0:
-                    self.player_speed_x += self.player_acceleration  # Verlangsamen, wenn keine Taste gedrückt ist
-
-            # Begrenze die Geschwindigkeit, um zu verhindern, dass sie zu groß wird
-            self.player_speed_y = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_y))
-            self.player_speed_x = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_x))
-
-            # Update enemy cars
-            for enemy in self.enemies:
-                enemy["rect"].centerx -= enemy["speed"]
-
-
-
-
-
-
-            # Bewegung des Hintergrundbilds
-            self.bg_x -= self.BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
-
-            # When the background is outside of the screen completely, reset bg_x
-            if self.bg_x < - self.current_background.get_width():
-                self.bg_x = 0
-
-            self.update_player_position()
-
-            # Zeichnen und Aktualisieren der Tankanzeige
-            self.draw_level()  # Anzeigen des Level-Indikators
-            
-            # We are drawing the current background 2 times
+            # We are drawing the current background 2 times.
             # One time at bg_x and one time at bg_x + self.current_background.get_width())
             # But we only draw it 2 times, when abs(self.bg_x) + self.ACTUAL_SCREEN_WIDTH is equal or larger than self.current_background.get_width())
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
                 y = self.ACTUAL_SCREEN_HEIGHT // 8
                 self.screen.blit(self.current_background, (x, y))
 
-            # Spawne Canister
+            # Reset bg_x (x-coordinate of the background) when the background is outside of the screen completely
+            if self.bg_x < - self.current_background.get_width():
+                self.bg_x = 0
+
+            # Move Background
+            self.bg_x -= self.BACKGROUND_SPEED  # Ändere die Geschwindigkeit, wie das Hintergrundbild nach links läuft
+
+            # Moving Player
+            self.player_input_speed_calculation()
+            self.update_player_position()
+
+            # Drawing player car
+            self.screen.blit(self.player_image, self.player_rect)
+
+            # Spawing enemy cars
+            current_time_for_car_spawn = pygame.time.get_ticks()
+            if current_time_for_car_spawn - self.last_spawn_time >= self.CAR_SPAWN_TIME:
+                self.spawn_car()
+                self.last_spawn_time = current_time_for_car_spawn
+
+            # Moving and drawing enemy cars
+            for enemy in self.enemies:
+                enemy["rect"].centerx -= enemy["speed"]
+                self.screen.blit(enemy["image"], enemy["rect"])
+
+            # Collision detection for enemy cars
+            for enemy in self.enemies:
+                if self.player_rect.colliderect(enemy["rect"]):
+                    self.handle_collision(enemy)
+                    self.is_game_over()
+
+                    # We have to return, as we want to reset the player and don't want to loose all lives at once.
+                    return
+
+            # Spawning canisters
             current_time_for_canister_spawn = pygame.time.get_ticks()
             if current_time_for_canister_spawn - self.last_canister_spawn_time >= self.CANISTER_SPAWN_TIME:  # 8 Sekunden , kann zum Testen verkleinert werden!
                 self.spawn_canister()
                 self.last_canister_spawn_time = current_time_for_canister_spawn
 
             # Drawing, moving, collecting, removing canisters
-            for canister in self.canisters:
+            self.handle_canister_behaviour()
 
-                canister.draw(self.screen)
-                canister.move()
-
-                if self.player_rect.colliderect(canister.rect):
-                    self.handle_canister_collision(canister)
-
-                # Remove canisters that are out of the screen
-                if canister.rect.right < 0:
-                    self.canisters.remove(canister)
-
-
-            # Drawing player car
-            self.screen.blit(self.player_image, self.player_rect)
-
-            # Moving, animating and removing pedestrians
-            for pedestrian in self.pedestrians:
-                pedestrian.animate()
-                pedestrian.move()
-                pedestrian.draw(self.screen)    
-            
-                # Removing pedestrians
-                if pedestrian.rect.right < 0:
-                        self.pedestrians.remove(pedestrian)
-
-
-
-            # We are drawing the trees in the same fashion as the background - 2 times
-            # But after the player car and the pedestrians to create a layered effect
-            for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
-                if self.is_fullscreen:
-                    y = self.ACTUAL_SCREEN_HEIGHT // 8
-                else:
-                    y = 0
-                self.screen.blit(self.current_trees, (x, y))
-
-            # Spawing cars
-            current_time_for_car_spawn = pygame.time.get_ticks()
-            if current_time_for_car_spawn - self.last_spawn_time >= self.CAR_SPAWN_TIME:
-                self.spawn_car()
-                self.last_spawn_time = current_time_for_car_spawn
-
-            # Drawing enemy cars
-            for enemy in self.enemies:
-                self.screen.blit(enemy["image"], enemy["rect"])
-
-            # Spawning bikes
-            current_time_for_bike_spawn = pygame.time.get_ticks()
-            if current_time_for_bike_spawn - self.last_bike_spawn_time >= self.BIKE_SPAWN_TIME:
-                self.spawn_bike()
-                self.last_bike_spawn_time = current_time_for_bike_spawn
-      
             # Spawning pedestrians
             current_time_for_pedestrian_spawn = pygame.time.get_ticks()
             if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= self.PEDESTRIAN_SPAWN_TIME:
                 self.spawn_pedestrian()
                 self.last_pedestrian_spawn_time = current_time_for_pedestrian_spawn
 
-            # Moving the button around based on screen size
-            self.quit_button.draw(self.screen)
-            self.quit_button.move(int(2.5*self.perc_W), self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H))
+            # Drawing, moving, animating and removing pedestrians
+            self.handle_pedestrian_behaviour()
 
-            # Collision detection for enemy cars
-            for enemy in self.enemies:
-                if self.player_rect.colliderect(enemy["rect"]):
-                    self.handle_collision(enemy)
+            # Collision detection for pedestrians
+            for pedestrian in self.pedestrians:
+                if self.player_rect.colliderect(pedestrian.rect):
 
+                    self.handle_collision(pedestrian)
+                    self.play_scream_sound()
                     self.is_game_over()
 
-                    # We have to return, as we don't want to loose all lives at once
+                    # We want to return the main_game() loop, after one collision detection,
+                    # to reset the player and not loose all lives.
                     return
+
+            # Spawning bikes
+            current_time_for_bike_spawn = pygame.time.get_ticks()
+            if current_time_for_bike_spawn - self.last_bike_spawn_time >= self.BIKE_SPAWN_TIME:
+                self.spawn_bike()
+                self.last_bike_spawn_time = current_time_for_bike_spawn
+            
+            # Drawing, moving, animating and removing bikes and collision detection
+            for bike in self.bikes:
+
+                if self.player_rect.colliderect(bike.rect):
+
+                    self.handle_collision(bike)
+                    self.is_game_over()
+
+                    # We want to return the main_game() loop, after one collision detection,
+                    # to reset the player and not loose all lives.
+                    return
+
+                bike.animate()
+                bike.move()
+                bike.draw(self.screen)
+
+                # Remove bikes that are out of the screen
+                if bike.rect.right < 0:
+                    self.bikes.remove(bike)
 
 
             # Updating the state of the wave - either the wave is on or not
@@ -1031,8 +1057,8 @@ class Game:
                 if enemy["rect"].right < 0:
                     self.enemies.remove(enemy)
 
-                    # The respawn rate when an enemy car leaves the screen is much less, when there is no wave right now
-                    # This gives the player time to breath
+                    # The respawn rate of enemy cars leaving the screen is far less when there is no wave active.
+                    # This gives the player time to breath.
                     if self.wave:
                         if random.random() < 0.95:
                             self.spawn_car()
@@ -1040,42 +1066,26 @@ class Game:
                         if random.random() < 0.3:
                             self.spawn_car()
 
-            # Collision detection and movement of enemy bikes
-            for bike in self.bikes:
 
-                if self.player_rect.colliderect(bike.rect):
 
-                    self.handle_collision(bike)
-                    
-                    self.is_game_over()
 
-                    # We have to return the main game loop after one collision detection, 
-                    # as we dont want to loose all lives
-                    return
+             # We are drawing the trees in the same fashion as the background - 2 times
+            # But after all other elements to create a layered effect
+            for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
+                y = self.ACTUAL_SCREEN_HEIGHT // 8
+                self.screen.blit(self.current_trees, (x, y))
 
-                bike.animate()
-                bike.move()
-                bike.draw(self.screen)
+                """ Not in use right now (windowed mode)
+                if self.is_fullscreen:
+                    y = self.ACTUAL_SCREEN_HEIGHT // 8
+                else:
+                    y = 0
+                self.screen.blit(self.current_trees, (x, y))
+                """
 
-                # Remove bikes that are out of the screen
-                if bike.rect.right < 0:
-                    self.bikes.remove(bike)
-
-            # Collision detection for pedestrians
-            for pedestrian in self.pedestrians:
-                if self.player_rect.colliderect(pedestrian.rect):
-
-                    self.handle_collision(pedestrian)
-                    self.play_pedestrian_sound() ################################# change to scream
-                    ###############################################################
-                    self.play_scream_sound() ################################
-                    self.is_game_over()
-
-                    # We have to return the main game loop after one collision detection, 
-                    # as we dont want to loose all lives
-                    return
-            
-
+            # Drawing and positioning the QUIT-button
+            self.quit_button.draw(self.screen)
+            self.quit_button.move(int(2.5*self.perc_W), self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H))
 
             # Night and day transition
             self.night_day_transition()
