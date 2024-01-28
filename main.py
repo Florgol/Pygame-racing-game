@@ -47,24 +47,26 @@ Authors: Florian Goldbach, Christian Gerhold
 Requires: Pygame library
 """
 
-import pygame
 import sys
 import random
 import time
 
-# Initialisierung von Pygame
+import pygame
+
+# Initialize Pygame
 pygame.init()
 pygame.font.init()
 pygame.mixer.init(64)
 
-# Main game class
 class Game:
+    """The main Game class - everything happens here."""
+
     # Screen size and colors
     SCREEN_WIDTH, SCREEN_HEIGHT = 1200, 800
     BG_COLOR = (0, 0, 0)
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
-    BLACK = (0,0,0)
+    BLACK = (0, 0, 0)
 
     # Game over screen sizes
     GAME_OVER_SCREEN_WIDTH, GAME_OVER_SCREEN_HEIGHT = 1200, 800
@@ -73,7 +75,7 @@ class Game:
     TIMER_FONT_SIZE = 80
     HIGH_SCORE_FONT_SIZE = 160
 
-    # Added constants to control game speed in one place
+    # Constants to control game speed
     BACKGROUND_SPEED = 3
     ENEMY_SPEED = 2
     CANISTER_SPEED = 6
@@ -83,8 +85,8 @@ class Game:
     PLAYER_SPEED_MIN = -5
 
     # Night day transition
-    HIGH_NOON_TIME = 20000 # More milisecs, means longer day/night
-    TRANSITION_SPEED = 8000 # Less milisecs, means faster transition
+    HIGH_NOON_TIME = 20000  # More milliseconds, means longer day/night
+    TRANSITION_SPEED = 8000  # Less milliseconds, means faster transition
 
     # Enemy Spawning timers
     car_spawn_time = 3000
@@ -93,29 +95,8 @@ class Game:
     CANISTER_SPAWN_TIME = 20000
 
     # Wave Time
-    WAVE_TIME = TRANSITION_SPEED*10
-    WAVE_DOWN_TIME = TRANSITION_SPEED*2
-
-
-    """
-    # Not being used right now - START
-
-    # Car lanes y positions for windowed mode
-    car_lanes_windowed = [
-        SCREEN_HEIGHT // 3 - 20,
-        SCREEN_HEIGHT // 3 + 80,
-        SCREEN_HEIGHT // 3 + 185,
-        SCREEN_HEIGHT // 3 + 290
-    ]
-
-    # Bike lanes y positions for windowed mode
-    bike_lanes_windowed = [
-        SCREEN_HEIGHT // 3 - 80,
-        SCREEN_HEIGHT // 3 + 380
-    ]
-
-    # Not being used right now - END
-    """
+    WAVE_TIME = TRANSITION_SPEED * 10
+    WAVE_DOWN_TIME = TRANSITION_SPEED * 2
 
     # Resources
     transition_images = []
@@ -131,152 +112,151 @@ class Game:
 
     player_rect = None
 
-    player_speed_x = 0  # Anfangsgeschwindigkeit in X-Richtung
-    player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
+    # Initial speed in X and Y direction
+    player_speed_x = 0
+    player_speed_y = 0
     player_acceleration = 0
 
-    # start screen
+    # Start screen
     start_screen_image = None
     game_over_screen_image = None
 
-    # fullscreen
+    # Fullscreen
     is_fullscreen = True
 
+
     def __init__(self):
-    # Infos about the actual screen size of user
+        # Get actual screen size of user
         info = pygame.display.Info()
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 
-        # Font for timer
+        # Initialize fonts
         self.font_timer = pygame.font.Font('fonts/Pixeltype.ttf', self.TIMER_FONT_SIZE)
         self.font_high_score = pygame.font.Font('fonts/Pixeltype.ttf', self.HIGH_SCORE_FONT_SIZE)
 
-        # High Score - the final timer string
+        # High score (final timer string)
         self.high_score = None
 
-        # For increasing difficulty just once each time
+        # Counter for increasing difficulty
         self.difficulty_increase_counter = 0
 
-        # Here we create a unit, that is dependent on the actual screen dimension - 1 percent of screen
-        # Why? : We ran into trouble testing the game on other screens and the elements were all over the place
-        # How does it work? : You have to use int(5*self.perc_W) to get a value that correlates with 5 percent screen width
+        # Create screen dimension-dependent units (1% of screen)
         self.perc_H = self.ACTUAL_SCREEN_HEIGHT / 100
         self.perc_W = self.ACTUAL_SCREEN_WIDTH / 100
 
         # Background size
-        self.BACKGROUND_WIDTH = int(180*self.perc_W)
-        self.BACKGROUND_HEIGHT = int(75*self.perc_H)
+        self.BACKGROUND_WIDTH = int(180 * self.perc_W)
+        self.BACKGROUND_HEIGHT = int(75 * self.perc_H)
 
         # Player size
-        self.PLAYER_WIDTH = int(5.9*self.perc_W)
-        self.PLAYER_HEIGHT = int(5*self.perc_H)
+        self.PLAYER_WIDTH = int(5.9 * self.perc_W)
+        self.PLAYER_HEIGHT = int(5 * self.perc_H)
 
         # Enemy car sizes
-        self.ENEMY_WIDTH_CAR = int(5.9*self.perc_W)
-        self.ENEMY_HEIGHT_CAR = int(5*self.perc_H)
+        self.ENEMY_WIDTH_CAR = int(5.9 * self.perc_W)
+        self.ENEMY_HEIGHT_CAR = int(5 * self.perc_H)
 
         # Enemy bike sizes
-        self.BIKE_WIDTH = int(4.2*self.perc_W)
-        self.BIKE_HEIGHT = int(3.4*self.perc_H)
+        self.BIKE_WIDTH = int(4.2 * self.perc_W)
+        self.BIKE_HEIGHT = int(3.4 * self.perc_H)
 
         # Enemy pedestrian sizes
-        self.PEDESTRIAN_WIDTH = int(3.5*self.perc_W)
-        self.PEDESTRIAN_HEIGHT = int(3*self.perc_H)
+        self.PEDESTRIAN_WIDTH = int(3.5 * self.perc_W)
+        self.PEDESTRIAN_HEIGHT = int(3 * self.perc_H)
 
-        # Minimum and maximum car position - invisible borders that the car can not cross
-        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H)
-        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2*self.perc_H)
+        # Define minimum and maximum car positions
+        self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3 * self.perc_H)
+        self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2 * self.perc_H)
         self.MIN_X = 0
         self.MAX_X = self.ACTUAL_SCREEN_WIDTH
 
-        # Position of car lanes
+        # Define car lanes
         self.car_lanes_fullscreen = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(2.5*self.perc_H),
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(12*self.perc_H),    
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(21.5*self.perc_H),
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(31*self.perc_H)    
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(2.5 * self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(12 * self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(21.5 * self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(31 * self.perc_H)
         ]
 
+        # Define bike lanes
         self.bike_lanes_fullscreen = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 - int(6.5*self.perc_H),
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(38*self.perc_H)
+            self.ACTUAL_SCREEN_HEIGHT // 3 - int(6.5 * self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(38 * self.perc_H)
         ]
 
+        # Define sidewalk lanes
         self.side_walk_lanes = [
-            self.ACTUAL_SCREEN_HEIGHT // 3 - int(14.5*self.perc_H),
-            self.ACTUAL_SCREEN_HEIGHT // 3 + int(45*self.perc_H)
+            self.ACTUAL_SCREEN_HEIGHT // 3 - int(14.5 * self.perc_H),
+            self.ACTUAL_SCREEN_HEIGHT // 3 + int(45 * self.perc_H)
         ]
 
-
-        # Enemy cars, bikes an pedestrians (list to keep track of all on screen)
+        # Initialize lists for enemies, bikes, pedestrians
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
 
-        # Pedestrian spawn time - used to spawn a pedestrian every x milisecs
+        # Initialize variables for spawn timings
         self.last_pedestrian_spawn_time = None
 
-        # Tracking game time
+        # Track game start time
         self.start_time = pygame.time.get_ticks()
 
-        # Is there a wave at the moment?
+        # Initialize wave status
         self.wave = True
 
-        # Important for night to day transition and reverse transition
+        # Variables for night to day transition
         self.transition_start_time = None
         self.reverse_transition = False
 
-        # Initiate screen - start screen is windowed
+        # Initialize screen (windowed start screen)
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
 
-        # Initiate game surface - this works together with "screen" and "scale_factor" to switch between fullscreen and windowed
+        # Initialize game surface
         self.game_surface = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
 
-        # Buttons for start screen
-        self.start_button = Button(self.SCREEN_WIDTH // 2 + 110 , self.SCREEN_HEIGHT // 2 + 180, "START", font_size=90)
+        # Initialize buttons for various screens
+        self.start_button = Button(self.SCREEN_WIDTH // 2 + 110, self.SCREEN_HEIGHT // 2 + 180, "START", font_size=90)
         self.quit_button_start_screen = Button(self.SCREEN_WIDTH // 2 - 18, self.SCREEN_HEIGHT // 2 + 60, "Quit", font_size=55)
-
-        # Buttons for ingame
         self.quit_button = Button(50, 30, "Quit", font_size=40)
+        self.continue_button = Button(self.SCREEN_WIDTH // 2 + 310, self.SCREEN_HEIGHT // 2 + 110, "CONTINUE", font_size=70)
+        self.quit_button_game_over_screen = Button(self.SCREEN_WIDTH // 2 - 260, self.SCREEN_HEIGHT // 2 + 110, "QUIT", font_size=60)
 
-        # Buttons for game over screen
-        self.continue_button = Button(self.SCREEN_WIDTH // 2 + 310 , self.SCREEN_HEIGHT // 2 + 110, "CONTINUE", font_size=70)
-        self.quit_button_game_over_screen = Button(self.SCREEN_WIDTH // 2 - 260, self.SCREEN_HEIGHT // 2 +110, "QUIT", font_size=60)
+        # Set initial game state
+        self.state = self.start_screen
 
-        # pygame.display.set_caption("ESA_3")
-
-        # Game state
-        self.state = self.start_screen  # Start with the start_screen state
-
-        # For spawning cars 
+        # Initialize time for spawning cars
         self.last_spawn_time = pygame.time.get_ticks()
 
-        # Enemies collision list
-        self.enemies_collided = []  # initialisieren
+        # Initialize list for collided enemies
+        self.enemies_collided = []
 
-        # Game clock
+        # Initialize game clock
         self.clock = pygame.time.Clock()
         
+        # Load game resources
         self.load_resources()
 
-        ##### CANISTER ######
-
+        # Initialize canister variables
         self.remaining_lives = 3
         self.last_canister_spawn_time = 0
         self.canisters = []
 
+
     def load_resources(self):
-        # Lade Sounds
+        """
+        Loads and prepares all the necessary game resources.
+
+        This includes loading and scaling images for the canister, backgrounds, cut-out trees, 
+        enemy cars, bikes, pedestrians, player car, start screen, and game over screen. 
+        It also initializes the current background and tree images, and loads sounds (calls load_sound() method).
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
+         
+        # Loading Sounds
         self.load_sound()
 
-        # Anmerkung von Florian Goldbach: Es ist nur ein Kanisterbild, benötigt also keine list comprehension
-        #canister_images = [
-        #    pygame.transform.scale(
-        #        pygame.image.load("./items/fuel.png").convert_alpha(), (50, 50))
-        #]
-
-        # self.canister_images = canister_images
-
+        # Loading Canister image
         self.canister_image = pygame.image.load("./items/fuel.png").convert_alpha()  # Loading image
         self.canister_image = pygame.transform.scale(self.canister_image, (int(2.5*self.perc_W), int(4.5*self.perc_H))) # Scaling
 
@@ -419,11 +399,6 @@ class Game:
         self.spawn_car()
 
 
-
-
-######### neu ##############
-
-
     def draw_level(self):
         """
         Draws the current remaining lives on the screen.
@@ -466,7 +441,6 @@ class Game:
 
         new_canister = Canister(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.randint(self.MIN_Y, self.MAX_Y - int(3*self.perc_H)), random.choice([7, 8, 9]), self.canister_image)
         self.canisters.append(new_canister)
-
 
 
     def handle_canister_behaviour(self):
@@ -565,7 +539,6 @@ class Game:
             print("wave is off")
 
 
-
     def spawn_car(self):
         """
         Spawns a car enemy on the game screen.
@@ -592,57 +565,110 @@ class Game:
                 break
 
 
-
-    # load canister sound (picking up a canister)
     def load_canister_sound(self):
+        """
+        Loads the canister pickup sound effect and sets its volume.
+
+        Author: Christian Gerhold
+        """
         self.canister_sound = pygame.mixer.Sound("./sounds/canister.wav")
         self.canister_sound.set_volume(0.5)
-     # play canister sound
+
+
     def play_canister_sound(self):
+        """
+        Plays the canister pickup sound effect on a specified audio channel.
+
+        Author: Christian Gerhold
+        """
         self.canister_sound.play()
         pygame.mixer.Channel(5).play(self.canister_sound)
 
 
-    # load sound for spawning bike
     def load_bike_sound(self):
+        """
+        Loads the bike spawn sound effect and sets its volume.
+
+        Author: Christian Gerhold
+        """
         # load bike sound
         self.bike_sound = pygame.mixer.Sound("./sounds/bike.wav")
         self.bike_sound.set_volume(0.1)
 
     def play_bike_sound(self):
+        """
+        Plays the bike spawn sound effect on a specified audio channel.
+
+        Author: Christian Gerhold
+        """
         self.bike_sound.play()
         pygame.mixer.Channel(1).play(self.bike_sound)
 
     def load_pedestrian_sound(self):
-            # load bike sound
-            self.pedestrian_sound = pygame.mixer.Sound("./sounds/walking.wav")
-            self.pedestrian_sound.set_volume(0.2)
+        """
+        Loads the pedestrian walking sound effect and sets its volume.
+
+        Author: Christian Gerhold.
+        """
+        self.pedestrian_sound = pygame.mixer.Sound("./sounds/walking.wav")
+        self.pedestrian_sound.set_volume(0.2)
 
     def play_pedestrian_sound(self):
+        """
+        Plays the pedestrian walking sound effect on a specified audio channel.
+        
+        Author: Christian Gerhold.
+        """
         self.pedestrian_sound.play()
         pygame.mixer.Channel(1).play(self.pedestrian_sound)
 
     def spawn_bike(self):
-        # Position the bike off the screen to the right
-        # Also slighty randomizing Y spawn position
+        """
+        Spawns a bike in the game.
+
+        Creates a new bike object with slightly off the right of the screen
+        and within the designated bike lanes. Adds the new bike to the list of bikes in the game
+        and plays the bike spawning sound effect.
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
+        # Also slighty randomizing Y spawn position and speed
         new_bike = Bike(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.choice(self.bike_lanes_fullscreen) + random.randint(-int(0.7*self.perc_H), int(0.7*self.perc_H)), random.randint(4, 6), self.bike_animation_images)
         self.bikes.append(new_bike)
         # sound for spawning bike
         self.play_bike_sound()  # Aufruf des bike spawn sounds
 
-    def spawn_pedestrian(self):
 
+    def spawn_pedestrian(self):
+        """
+        Spawns a pedestrian in the game.
+
+        Randomly selects one of the pedestrian types and creates a new pedestrian object.
+        The pedestrian is positioned slightly off the right of the screen with a randomized
+        vertical position. Adds the new pedestrian to the list of pedestrians and plays
+        the pedestrian sound effect.
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
         # Randomly choose between the two types of pedestrians
         chosen_pedestrian_images = random.choice([self.pedestrian1_animation_images, self.pedestrian2_animation_images])
     
-        # Position the pedestrian off the screen to the right
-        # Also slighty randomizing Y spawn position
+        # Also slighty randomizing Y spawn position and speed
         new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
         self.play_pedestrian_sound() # walking sound with spawning a pedestrian
 
 
     def handle_collision(self, collided_with):
+        """
+        Handles collisions in the game.
+
+        Updates the high score based on the current game time (in case game ends after this collision).
+        It then plays the collision sound effect, stops the game soundtrack, 
+        and decrements the player's remaining lives. Also records the collided entity for potential future use.
+
+        Author: Florian Goldbach
+        """
         self.high_score = self.get_timer_string()
         self.play_collision()
         self.stop_soundtrack()
@@ -746,15 +772,39 @@ class Game:
             self.difficulty_increase_counter +=1
     
     def display_timer(self):
+        """
+        Displays the current game timer on the screen.
+
+        Retrieves the formatted game time as a string and renders it on the screen 
+        using the designated font and position.
+
+        Author: Florian Goldbach
+        """
         timer_string = self.get_timer_string()
         timer_surface = self.font_timer.render(timer_string, True, self.WHITE)
         self.screen.blit(timer_surface, (int(85*self.perc_W), int(7*self.perc_H)))
     
     def display_high_score(self):
+        """
+        Displays the high score on the screen.
+
+        Renders the high score, stored as a string, on the screen with the specified 
+        font and at a designated position.
+
+        Author: Florian Goldbach
+        """
         timer_surface = self.font_high_score.render(self.high_score, True, self.BLACK)
         self.screen.blit(timer_surface, (int(20*self.perc_W), int(7*self.perc_H)))
 
     def is_game_over(self):
+        """
+        Checks and handles the game over condition.
+
+        If the player's remaining lives are depleted, it switches the game screen to the 
+        game over screen and updates the game state.
+
+        Author: Florian Goldbach
+        """
         if self.remaining_lives < 1:
             self.screen = pygame.display.set_mode((self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT), pygame.NOFRAME)
             self.is_fullscreen = False
@@ -762,12 +812,31 @@ class Game:
             return
 
     def change_to_start_screen(self):
+        """
+        Transitions the game to the start screen.
+
+        Changes the display mode to windowed (non-fullscreen) and updates the game state 
+        to show the start screen.
+
+        Author: Florian Goldbach
+        """
         # Change display mode, set is_fullscreen to False and update game state
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME)
         self.is_fullscreen = False
         self.state = self.start_screen
 
     def night_day_transition(self):
+        """
+        Manages the transition between day and night in the game.
+
+        The method tracks elapsed time to initiate a day-to-night and night-to-day transition.
+        It changes background images at regular intervals to create a visual transition effect.
+        The transition starts after a predefined 'HIGH_NOON_TIME' and proceeds in a forward or
+        reverse sequence, based on the elapsed time and whether the reverse transition has been triggered.
+        The process ensures a continuous day-night cycle in the game's background environment.
+
+        Author: Florian Goldbach
+        """
 
         # Keeping track of time
         elapsed_time = pygame.time.get_ticks() - self.start_time
@@ -813,6 +882,16 @@ class Game:
     
 
     def update_player_position(self):
+        """
+        Updates the player's position based on their current speed.
+
+        Adjusts the player's vertical (y-axis) and horizontal (x-axis) position 
+        according to their current speed. It also ensures the player's car 
+        remains within the defined screen boundaries, preventing it from moving 
+        off-screen.
+
+        Authors: Christian Gerhold, Florian Goldbach
+        """
 
         # Movement of player based on speed (y-axis)
         self.player_rect.centery += self.player_speed_y
@@ -836,6 +915,15 @@ class Game:
 
     # Start Screen sound
     def load_sound(self):
+        """
+        Loads and sets the volume for various sound effects used in the game.
+
+        This includes sounds for the game over screen, start screen, start and quit buttons,
+        general game soundtrack, collision effects, car engine (vroom sound), and screams for pedestrian collisions.
+        Each sound is loaded from a file and its volume is set accordingly.
+
+        Author: Christian Gerhold, Florian Goldbach
+        """
         # load game over screen sound
         self.game_over_screen_sound = pygame.mixer.Sound("./sounds/game_over.wav")
         self.game_over_screen_sound.set_volume(1)
@@ -875,50 +963,122 @@ class Game:
 
     # start game over sound
     def play_game_over_screen_sound(self):
+        """
+        Plays the game over screen sound effect on a loop.
+
+        This sound effect is played continuously when the game over screen is active.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(6).play(self.game_over_screen_sound, loops=-1) # plays forever as long as being stuck in the game over screen
 
     # start_screen sound play
     def play_soundtrack(self):
+        """
+        Plays the game's main soundtrack on a loop.
+
+        This background music is set to play continuously throughout the game.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(5).play(self.soundtrack, loops=-1)  # sound plays forever // extra channel
 
     # stop soundtrack
     def stop_soundtrack(self):
+        """
+        Stops the game's main soundtrack.
+
+        This method is used to halt the background music, typically in response to specific game events.
+
+        Author: Ghristian Gerhold
+        """
         # Stoppt den Sound auf Kanal 3 (der Soundtrack-Kanal)
         self.soundtrack.stop() # hier gab es Überlagerungen
 
     # start_screen sound play
     def play_start_screen_sound(self):
+        """
+        Plays the start screen sound effect on a loop.
+
+        This sound effect is played continuously when the start screen is active.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(2).play(self.start_screen_sound, loops=-1) # start screen sound plays forever // extra channel
         self.start_screen_sound.play()
 
     # start button sound play
     def play_start_button_sound(self):
+        """
+        Plays the start button sound effect.
+
+        This method is triggered when the start button is interacted with, adding an audio cue to the action.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(0).play(self.start_button_sound) # mixer setting to play sounds on different channels
         self.start_button_sound.play()
 
     # stop start_screen sound
     def stop_start_screen_sound(self, fadeout_time=1000):
+        """
+        Fades out and stops the start screen sound.
+
+        Gradually fades out the background music of the start screen over the specified fadeout time.
+
+        Args:
+            fadeout_time (int): The duration in milliseconds over which the sound fades out.
+        
+        Author: Ghristian Gerhold
+        """
         # Stoppt den Sound auf Kanal 2 (der Hintergrundmusik-Kanal)
         pygame.mixer.Channel(2).fadeout(fadeout_time)
 
     # quit button sound play
     def play_quit_button_sound(self):
+        """
+        Plays the sound effect associated with the quit button.
+
+        This method adds an audio cue to the quit button interaction.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(0).play(self.quit_button_sound) # mixer setting to play sounds on different channels
         self.quit_button_sound.play()
 
     # collision sound play
     def play_collision(self):
+        """
+        Plays the collision sound effect.
+
+        This sound effect is used to audibly indicate a collision event in the game.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(5).play(self.collision) # mixer setting to play sounds on different channels
         self.collision.play()
 
     # Vroom sound play
     def play_vroom(self):
+        """
+        Plays the 'vroom' sound effect.
+
+        This sound effect simulates the noise of a car engine.
+
+        Author: Ghristian Gerhold
+        """
         pygame.mixer.Channel(5).play(self.vroom) # mixer setting to play sounds on different channels
         self.vroom.play()
 
     def play_scream_sound(self):
-        
-        
+        """
+        Plays one of two scream sound effects.
+
+        Randomly selects between two scream sounds to play, adding variety to the audio cues.
+        Used to simulate a scream in response to pedestrian being hit.
+
+        Authors: Christian Gerhold, Florian Goldbach
+        """
         if random.random() > 0.2:
             pygame.mixer.Channel(7).play(self.scream)
             self.scream.play()
@@ -928,7 +1088,16 @@ class Game:
 
     # Author: Christian Gerhold
     # Manages acceleration and speed calculation
-    def player_input_speed_calculation(self):    
+    def player_input_speed_calculation(self):
+        """
+        Calculates and updates the player's speed based on keyboard input.
+
+        Adjusts the player's horizontal and vertical speed based on arrow key inputs.
+        Implements acceleration and deceleration mechanics and limits the player's speed 
+        to predefined maximum and minimum values.
+
+        Author: Christian Gerhold
+        """
         # Bewegung des Spielers
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
@@ -961,11 +1130,32 @@ class Game:
 
     # Stopping all sounds - Needed to add this as there still was overlapping
     def stop_all_sounds(self):
+        """
+        Stops all currently playing sounds.
+
+        This method is used to halt all sound effects and music, typically in response 
+        to specific game events or during transitions.
+
+        Author: Christian Gerhold
+        """
         pygame.mixer.stop()
 
 
-    # Start screen state - start screen loop
     def start_screen(self):
+        """
+        Manages the start screen loop of the game.
+
+        This method controls the start screen display, where the player can either start the game 
+        or quit. It handles the events for the start and quit buttons, transitioning to the main game 
+        loop upon starting and closing the game when quitting. The method also manages the necessary 
+        audio transitions and resets game parameters (like remaining lives and collided enemies) 
+        for a new game session.
+        It also reinitializes timers for use in the main game.
+
+        This method is called when self.state == self.start_screen
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
         self.stop_soundtrack()
         self.play_start_screen_sound()  # Sound nur im Startbildschirm abspielen
         while True:
@@ -1007,6 +1197,20 @@ class Game:
             pygame.display.update()
 
     def game_over_screen(self):
+        """
+        Manages the game over screen loop.
+
+        On the game over screen, this method halts all ongoing sounds and plays the game over sound. 
+        It continuously checks for player interactions with the 'Continue' or 'Quit' buttons. 
+        Clicking 'Continue' resets the game parameters, such as remaining lives and collided enemies, 
+        and transitions back to the main game loop. Clicking 'Quit' exits the game. The method also 
+        manages visual elements and audio transitions for the game over screen.
+        It also reinitializes timers for use in the main game.
+
+        This method is called when self.state == self.game_over_screen
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
         self.stop_all_sounds()  # Stop all sounds
         self.play_game_over_screen_sound()
         while True:
@@ -1049,8 +1253,25 @@ class Game:
             self.display_high_score()
             pygame.display.update()
 
-    # This is the main game state - main game loop
+
     def main_game(self):
+        """
+        The main game loop handling the core gameplay mechanics.
+
+        This method manages the game's main loop, encompassing various functionalities:
+        - Starts and manages the game's soundtrack.
+        - Re-initializes game object behaviors for a new or restarted game.
+        - Processes player inputs and game events, including quitting the game and handling in-game button clicks.
+        - Manages game elements such as player movement, spawning and handling of bikes, pedestrians, and enemy cars, along with their animations and collision detection.
+        - Controls the game's difficulty, wave state, and day-to-night transitions.
+        - Renders game elements, including the background, trees, and UI components like the quit button and timer.
+        - Ensures the game runs at a specified frame rate.
+
+        The loop continues until an exit condition is met, such as quitting the game or transitioning to another game state.
+        This method is called when self.state == self.main_game
+
+        Author: Florian Goldbach, Christian Gerhold
+        """
         self.play_soundtrack()  # Aufruf des soundtracks
 
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
@@ -1244,6 +1465,15 @@ class Game:
 
 
     def run(self):
+        """
+        Starts and maintains the primary game loop.
+
+        This method continuously executes the current game state method. The state method 
+        can be altered elsewhere in the program to switch between different parts of the game, 
+        such as the start screen, main game, or game over screen.
+
+        Author: Florian Goldbach
+        """
         while True:
             self.state()
 
@@ -1306,11 +1536,15 @@ class Pedestrian:
         screen.blit(self.image, self.rect.topleft)
 
 
-# The Bike class is analogous to the Pedestrian class.
-# The Bike and the Pedestrian class do the same thing.
-# I did not use inheritance, but there is opportunity here.
-# Author: Florian Goldbach
 class Bike:
+    """
+    The Bike class is analogous to the Pedestrian class.
+
+    The Bike and the Pedestrian class do the same thing.
+    I did not use inheritance, but there is opportunity here.
+
+    Author: Florian Goldbach
+    """
     def __init__(self, x, y, speed, bike_animation_images):
         self.x = x
         self.y = y
@@ -1440,11 +1674,11 @@ class Button:
                 return True
         return False
 
-# Running the game
+"""Here we are running the instantiated game object"""
 game = Game()
 game.load_bike_sound() # load spawn bike sound
 game.load_pedestrian_sound() # loads walking sound for pedestrians
-game.load_canister_sound()
+game.load_canister_sound() # loads canister sound for pedestrians
 game.run()
 
 
