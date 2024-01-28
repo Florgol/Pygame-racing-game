@@ -38,6 +38,11 @@ Not only for these methods, but across the board.
 Additional Remarks: The sequence in which elements are drawn in the main_game() method is important. 
 We use this to create a layered effect, in which elements seem to be passing underneath the tree tops.
 
+Want to play?
+We recommend a large screen and a headset or speakers (better than laptop quality speakers) for playing.
+The streets are buzzing, but you have to get where you are going.
+Not even a traffic jam can deter you. Can you survive 5, or even 10 minutes?
+
 Authors: Florian Goldbach, Christian Gerhold
 Requires: Pygame library
 """
@@ -82,14 +87,14 @@ class Game:
     TRANSITION_SPEED = 8000 # Less milisecs, means faster transition
 
     # Enemy Spawning timers
-    CAR_SPAWN_TIME = 3000
-    BIKE_SPAWN_TIME = 10000
-    PEDESTRIAN_SPAWN_TIME = 6000
-    CANISTER_SPAWN_TIME = 15000
+    car_spawn_time = 3000
+    bike_spawn_time = 10000
+    pedestrian_spawn_time = 6000
+    CANISTER_SPAWN_TIME = 20000
 
     # Wave Time
     WAVE_TIME = TRANSITION_SPEED*10
-    WAVE_DOWN_TIME = TRANSITION_SPEED*1
+    WAVE_DOWN_TIME = TRANSITION_SPEED*2
 
 
     """
@@ -148,6 +153,9 @@ class Game:
 
         # High Score - the final timer string
         self.high_score = None
+
+        # For increasing difficulty just once each time
+        self.difficulty_increase_counter = 0
 
         # Here we create a unit, that is dependent on the actual screen dimension - 1 percent of screen
         # Why? : We ran into trouble testing the game on other screens and the elements were all over the place
@@ -270,7 +278,7 @@ class Game:
         # self.canister_images = canister_images
 
         self.canister_image = pygame.image.load("./items/fuel.png").convert_alpha()  # Loading image
-        self.canister_image = pygame.transform.scale(self.canister_image, (50, 50)) # Scaling
+        self.canister_image = pygame.transform.scale(self.canister_image, (int(2.5*self.perc_W), int(4.5*self.perc_H))) # Scaling
 
         # Loading background images 
         self.transition_images = [
@@ -417,6 +425,15 @@ class Game:
 
 
     def draw_level(self):
+        """
+        Draws the current remaining lives on the screen.
+
+        Fills the screen with the background color (erases left over fuel containers) 
+        and displays the fuel icons corresponding to the player's remaining lives. 
+        The fuel icons are scaled to fit the screen dimensions and are placed on the correct position on screen.
+
+        Authors: Christian Gerhold, Florian Goldbach
+        """
         self.screen.fill(self.BG_COLOR)
 
         scaled_width = int(2.5*self.perc_W)
@@ -432,16 +449,24 @@ class Game:
 
 
     def handle_canister_collision(self, canister):
+        """
+        Handles the player's collision with a canister.
 
-            print("Picked up canister!")
-            self.remaining_lives += 1  # add a canister/live
-            self.canister_sound.play()
-            self.canisters.remove(canister)
+        Increases the player's remaining lives by one, plays a sound effect, 
+        and removes the canister from the game.
+
+        Authors: Florian Goldbach, Christian Gerhold
+        """
+        print("Picked up canister!")
+        self.remaining_lives += 1  # add a canister/live
+        self.canister_sound.play()
+        self.canisters.remove(canister)
 
     def spawn_canister(self):
 
-        new_canister = Canister(self.ACTUAL_SCREEN_WIDTH + 50, random.randint(self.MIN_Y, self.MAX_Y - int(3*self.perc_H)), random.choice([7, 8, 9]), self.canister_image)
+        new_canister = Canister(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.randint(self.MIN_Y, self.MAX_Y - int(3*self.perc_H)), random.choice([7, 8, 9]), self.canister_image)
         self.canisters.append(new_canister)
+
 
 
     def handle_canister_behaviour(self):
@@ -472,6 +497,13 @@ class Game:
 
 
     def fade_to_black(self, duration=2000):
+        """
+        Fades the screen to black over a specified duration.
+
+        This is mostly used, so that the vroom sound can be heard :)
+
+        Author: Florian Goldbach
+        """
         fade_surface = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
         fade_surface.fill((0, 0, 0))
 
@@ -481,11 +513,24 @@ class Game:
             pygame.display.update()
             pygame.time.delay(duration // (256//4))  # Total duration divided by number of alpha increments
 
-        # At this point, the screen is completely black.
-
 
     def will_collide(self, new_enemy_rect):
-        buffer_space = 20  # 20 pixels buffer, you can adjust
+        """
+        Determines if the given rectangle will collide with any existing enemies.
+
+        This method checks if the specified rectangle (representing a new enemy)
+        intersects with any of the existing enemies' rectangles, considering an
+        additional buffer space around each enemy.
+
+        Args:
+            new_enemy_rect (pygame.Rect): The rectangle to check for potential collisions.
+
+        Returns:
+            bool: True if a collision is detected, False otherwise.
+        
+        Author: Florian Goldbach
+        """
+        buffer_space = 20  # 20 pixels buffer, adjustable
         for enemy in self.enemies:
             # Inflate the existing enemy rect by the buffer space
             if enemy["rect"].inflate(buffer_space, 0).colliderect(new_enemy_rect):
@@ -493,6 +538,16 @@ class Game:
         return False
 
     def update_state_of_wave(self):
+        """
+        Updates the state of the 'wave' in the game.
+
+        Tracks the elapsed time to toggle the 'wave' state between on and off. 
+        The wave turns on after a set duration (WAVE_TIME + WAVE_DOWN_TIME) and 
+        then turns off at the end of the WAVE_TIME. This creates a cycle of wave 
+        states to add dynamics to the game.
+
+        Author: Florian Goldbach
+        """
         current_time = pygame.time.get_ticks()
         # We initialize wave_cycle_start_time when the player presses the start button
         elapsed_time = current_time - self.wave_cycle_start_time
@@ -512,12 +567,21 @@ class Game:
 
 
     def spawn_car(self):
+        """
+        Spawns a car enemy on the game screen.
+
+        Selects a random image for the enemy car and sets its initial position just outside the screen.
+        The car's vertical position is slightly randomized within the lane limits. The method attempts 
+        to spawn the car without causing a collision, up to a maximum number of attempts.
+
+        Author: Florian Goldbach
+        """
         enemy_image = random.choice(self.enemy_images)
         enemy_rect = enemy_image.get_rect()
 
         enemy_rect.centerx = self.ACTUAL_SCREEN_WIDTH if self.is_fullscreen else self.SCREEN_WIDTH
-        enemy_rect.centerx += 50 # Adding cars a bit outside of screen, so they drive in
-        attempts = 10 # Using a maximum number of attempts to avoid endless loop when screen is crowded
+        enemy_rect.centerx += int(4*self.perc_W) # Adding cars a bit outside of screen, so they drive in
+        attempts = 5 # Using a maximum number of attempts to avoid endless loop when screen is crowded
 
         for _ in range(attempts):
             # Slighty randomizing Y spawn position
@@ -561,7 +625,7 @@ class Game:
     def spawn_bike(self):
         # Position the bike off the screen to the right
         # Also slighty randomizing Y spawn position
-        new_bike = Bike(self.ACTUAL_SCREEN_WIDTH +50, random.choice(self.bike_lanes_fullscreen) + random.randint(-int(0.7*self.perc_H), int(0.7*self.perc_H)), random.randint(4, 6), self.bike_animation_images)
+        new_bike = Bike(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.choice(self.bike_lanes_fullscreen) + random.randint(-int(0.7*self.perc_H), int(0.7*self.perc_H)), random.randint(4, 6), self.bike_animation_images)
         self.bikes.append(new_bike)
         # sound for spawning bike
         self.play_bike_sound()  # Aufruf des bike spawn sounds
@@ -573,7 +637,7 @@ class Game:
     
         # Position the pedestrian off the screen to the right
         # Also slighty randomizing Y spawn position
-        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + 50, random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
+        new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
         self.play_pedestrian_sound() # walking sound with spawning a pedestrian
 
@@ -590,7 +654,20 @@ class Game:
         # List of collided enemies - could be interesting for info at the end of the game - not implemented as of now
         self.enemies_collided.append(collided_with)
 
+
     def get_timer_string(self):
+        """
+        Calculates and formats the elapsed game time into a string.
+
+        Computes the elapsed time since the game's start and converts it into 
+        hours, minutes, and seconds. The time is then formatted into a string 
+        in the format 'HH:MM:SS'.
+
+        Returns:
+            str: Formatted time string representing the elapsed time.
+        
+        Author: Florian Goldbach
+        """
         elapsed_time = pygame.time.get_ticks() - self.timer_start_time
         seconds = elapsed_time // 1000
         minutes = seconds // 60
@@ -598,6 +675,75 @@ class Game:
         seconds %= 60
         minutes %= 60
         return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    def increase_difficulty(self):
+        """
+        Increases game difficulty every minute for the first ten minutes. Then at 15 and 20 min.
+        Each difficulty increase, spawn times for cars, pedestrians, and bikes are reduced.
+        `difficulty_increase_counter` ensures each difficulty level is only applied once.
+
+        There is an opportunity to increase the difficulty more general and algorithmically. 
+        But for now it has this customized style.
+
+        Author: Florian Goldbach
+        """
+
+        elapsed_time = pygame.time.get_ticks() - self.timer_start_time
+        minutes = elapsed_time // 60000
+        if minutes >= 1 and self.difficulty_increase_counter == 0:
+            self.car_spawn_time -= 500
+            self.pedestrian_spawn_time -= 1000
+            self.bike_spawn_time -= 1000
+            self.difficulty_increase_counter +=1
+        if minutes >= 2 and self.difficulty_increase_counter == 1:
+            self.car_spawn_time -= 500
+            self.pedestrian_spawn_time -= 1000
+            self.bike_spawn_time -= 1000
+            self.difficulty_increase_counter +=1
+        if minutes >= 3 and self.difficulty_increase_counter == 2:
+            self.pedestrian_spawn_time -= 1000
+            self.bike_spawn_time -= 1000
+            self.difficulty_increase_counter +=1
+        if minutes >= 4 and self.difficulty_increase_counter == 3:
+            self.car_spawn_time -= 500
+            self.pedestrian_spawn_time -= 1000
+            self.bike_spawn_time -= 1000
+            self.difficulty_increase_counter +=1
+        if minutes >= 5 and self.difficulty_increase_counter == 4:
+            self.car_spawn_time -= 500
+            self.pedestrian_spawn_time -= 1000
+            self.bike_spawn_time -= 1000
+            self.difficulty_increase_counter +=1
+        if minutes >= 6 and self.difficulty_increase_counter == 5:
+            self.car_spawn_time -= 200
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 7 and self.difficulty_increase_counter == 6:
+            self.car_spawn_time -= 100
+            self.pedestrian_spawn_time -= 200
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 8 and self.difficulty_increase_counter == 7:
+            self.car_spawn_time -= 100
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 9 and self.difficulty_increase_counter == 8:
+            self.car_spawn_time -= 100
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 10 and self.difficulty_increase_counter == 9:
+            self.car_spawn_time -= 100
+            self.pedestrian_spawn_time -= 500
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 15 and self.difficulty_increase_counter == 10:
+            self.pedestrian_spawn_time -= 200
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
+        if minutes >= 20 and self.difficulty_increase_counter == 11:
+            self.pedestrian_spawn_time -= 200
+            self.bike_spawn_time -= 500
+            self.difficulty_increase_counter +=1
     
     def display_timer(self):
         timer_string = self.get_timer_string()
@@ -607,8 +753,6 @@ class Game:
     def display_high_score(self):
         timer_surface = self.font_high_score.render(self.high_score, True, self.BLACK)
         self.screen.blit(timer_surface, (int(20*self.perc_W), int(7*self.perc_H)))
-
- 
 
     def is_game_over(self):
         if self.remaining_lives < 1:
@@ -971,9 +1115,18 @@ class Game:
             # Drawing player car
             self.screen.blit(self.player_image, self.player_rect)
 
+            # Spawning canisters
+            current_time_for_canister_spawn = pygame.time.get_ticks()
+            if current_time_for_canister_spawn - self.last_canister_spawn_time >= self.CANISTER_SPAWN_TIME:  # 8 Sekunden , kann zum Testen verkleinert werden!
+                self.spawn_canister()
+                self.last_canister_spawn_time = current_time_for_canister_spawn
+
+            # Drawing, moving, collecting, removing canisters
+            self.handle_canister_behaviour()
+
             # Spawing enemy cars
             current_time_for_car_spawn = pygame.time.get_ticks()
-            if current_time_for_car_spawn - self.last_spawn_time >= self.CAR_SPAWN_TIME:
+            if current_time_for_car_spawn - self.last_spawn_time >= self.car_spawn_time:
                 self.spawn_car()
                 self.last_spawn_time = current_time_for_car_spawn
 
@@ -991,18 +1144,9 @@ class Game:
                     # We have to return, as we want to reset the player and don't want to loose all lives at once.
                     return
 
-            # Spawning canisters
-            current_time_for_canister_spawn = pygame.time.get_ticks()
-            if current_time_for_canister_spawn - self.last_canister_spawn_time >= self.CANISTER_SPAWN_TIME:  # 8 Sekunden , kann zum Testen verkleinert werden!
-                self.spawn_canister()
-                self.last_canister_spawn_time = current_time_for_canister_spawn
-
-            # Drawing, moving, collecting, removing canisters
-            self.handle_canister_behaviour()
-
             # Spawning pedestrians
             current_time_for_pedestrian_spawn = pygame.time.get_ticks()
-            if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= self.PEDESTRIAN_SPAWN_TIME:
+            if current_time_for_pedestrian_spawn - self.last_pedestrian_spawn_time >= self.pedestrian_spawn_time:
                 self.spawn_pedestrian()
                 self.last_pedestrian_spawn_time = current_time_for_pedestrian_spawn
 
@@ -1023,7 +1167,7 @@ class Game:
 
             # Spawning bikes
             current_time_for_bike_spawn = pygame.time.get_ticks()
-            if current_time_for_bike_spawn - self.last_bike_spawn_time >= self.BIKE_SPAWN_TIME:
+            if current_time_for_bike_spawn - self.last_bike_spawn_time >= self.bike_spawn_time:
                 self.spawn_bike()
                 self.last_bike_spawn_time = current_time_for_bike_spawn
             
@@ -1086,6 +1230,8 @@ class Game:
             # Drawing and positioning the QUIT-button
             self.quit_button.draw(self.screen)
             self.quit_button.move(int(2.5*self.perc_W), self.ACTUAL_SCREEN_HEIGHT // 8 + int(3*self.perc_H))
+
+            self.increase_difficulty()
 
             # Night and day transition
             self.night_day_transition()
