@@ -35,8 +35,11 @@ While a lot of this behaviour is abstracted into methods,
 there still is potential for more abstraction and refactoring.
 Not only for these methods, but across the board.
 
-Additional Remarks: The sequence in which elements are drawn in the main_game() method is important. 
+Additional Remark 1: The order in which elements are drawn in the main_game() method is important. 
 We use this to create a layered effect, in which elements seem to be passing underneath the tree tops.
+
+Additional Remark 2: The order in which the Authors are listed (for each method, or class) has a meaning.
+If there are 2 Authors, the first mentioned worked the most on this section of code (important for oral examination).
 
 Want to play?
 We recommend a large screen and a headset or speakers (better than laptop quality speakers) for playing.
@@ -364,40 +367,53 @@ class Game:
         self.game_over_screen_image = pygame.transform.scale(self.game_over_screen_image, (self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT))
 
     def initialize_behaviour(self):
+        """
+        Initialize the game behavior and set initial parameters.
 
+        This method sets up the game environment, including screen mode,
+        player's position, speed, acceleration, and initializes various game
+        elements such as enemies, bikes, pedestrians, and canisters. It also
+        initializes timers for bike, pedestrian, and fuel spawns and spawns
+        an initial car.
+
+        Authors: Florian Goldbach, Christian Gerhold
+        """
         # Starting in Fullscreen - Here you can decide in which mode to start
-        self.screen = pygame.display.set_mode((self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN) # Fullscreen
-        # self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME) # Windowed
+        self.screen = pygame.display.set_mode(
+            (self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT), pygame.FULLSCREEN
+        )
+        # self.screen = pygame.display.set_mode(
+        #     (self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.NOFRAME
+        # )
         self.is_fullscreen = True
-                           
-        self.player_rect.centerx = self.SCREEN_WIDTH // 4  # Ändere die Position auf der X-Achse
-        self.player_rect.centery = random.choice(self.car_lanes_fullscreen) if self.is_fullscreen else random.choice(self.car_lanes_windowed)  # Change position on y-axis to a predefined lane
-        self.player_speed_x = 0  # Anfangsgeschwindigkeit in X-Richtung
-        self.player_speed_y = 0  # Anfangsgeschwindigkeit in Y-Richtung
-        self.player_acceleration = self.PLAYER_ACCELERATION  # Beschleunigung
 
-        # Remove eneemy cars and bikes
+        self.player_rect.centerx = self.SCREEN_WIDTH // 4  # Change position on the X-axis
+        self.player_rect.centery = (
+            random.choice(self.car_lanes_fullscreen)
+            if self.is_fullscreen
+            else random.choice(self.car_lanes_windowed)
+        )  # Change position on the Y-axis to a predefined lane
+        self.player_speed_x = 0  # Initial speed in the X-direction
+        self.player_speed_y = 0  # Initial speed in the Y-direction
+        self.player_acceleration = self.PLAYER_ACCELERATION  # Acceleration
+
+        # Remove enemy cars and bikes
         self.enemies = []
         self.bikes = []
         self.pedestrians = []
         self.canisters = []
 
-        # Initializing self.last_bike_spawn_time for spawning bikes every x milisecs
+        # Initializing self.last_bike_spawn_time for spawning bikes every x milliseconds
         self.last_bike_spawn_time = pygame.time.get_ticks()
 
-        # Initializing self.last_pedestrian_spawn_time for spawning pedestrians every x milisecs
+        # Initializing self.last_pedestrian_spawn_time for spawning pedestrians every x milliseconds
         self.last_pedestrian_spawn_time = pygame.time.get_ticks()
 
-        # Initializing self.last_fuel_spawn_time for spawning fuel every x milisecs
+        # Initializing self.last_fuel_spawn_time for spawning fuel every x milliseconds
         self.last_fuel_spawn_time = pygame.time.get_ticks()
 
-
-        # self.enemy_rect.centerx = self.SCREEN_WIDTH  # Startposition des gegnerischen Autos auf der rechten Seite
-        # self.enemy_rect.centery = random.choice(self.car_lanes_windowed)
-        # self.enemy_speed = self.ENEMY_SPEED
         # Spawn an initial car
         self.spawn_car()
-
 
     def draw_level(self):
         """
@@ -538,7 +554,6 @@ class Game:
             self.wave = False
             print("wave is off")
 
-
     def spawn_car(self):
         """
         Spawns a car enemy on the game screen.
@@ -564,7 +579,6 @@ class Game:
                 self.enemies.append({"image": enemy_image, "rect": enemy_rect, "speed": enemy_speed})
                 break
 
-
     def load_canister_sound(self):
         """
         Loads the canister pickup sound effect and sets its volume.
@@ -574,7 +588,6 @@ class Game:
         self.canister_sound = pygame.mixer.Sound("./sounds/canister.wav")
         self.canister_sound.set_volume(0.5)
 
-
     def play_canister_sound(self):
         """
         Plays the canister pickup sound effect on a specified audio channel.
@@ -583,7 +596,6 @@ class Game:
         """
         self.canister_sound.play()
         pygame.mixer.Channel(5).play(self.canister_sound)
-
 
     def load_bike_sound(self):
         """
@@ -638,7 +650,6 @@ class Game:
         # sound for spawning bike
         self.play_bike_sound()  # Aufruf des bike spawn sounds
 
-
     def spawn_pedestrian(self):
         """
         Spawns a pedestrian in the game.
@@ -657,7 +668,6 @@ class Game:
         new_pedestrian = Pedestrian(self.ACTUAL_SCREEN_WIDTH + int(4*self.perc_W), random.choice(self.side_walk_lanes) + random.randint(-int(1.5*self.perc_H), int(1.5*self.perc_H)), random.choice([3.2, 3.3, 3.5]), chosen_pedestrian_images)
         self.pedestrians.append(new_pedestrian)
         self.play_pedestrian_sound() # walking sound with spawning a pedestrian
-
 
     def handle_collision(self, collided_with):
         """
@@ -679,7 +689,6 @@ class Game:
 
         # List of collided enemies - could be interesting for info at the end of the game - not implemented as of now
         self.enemies_collided.append(collided_with)
-
 
     def get_timer_string(self):
         """
@@ -880,7 +889,6 @@ class Game:
                     self.transition_start_time = None
                     self.reverse_transition = False
     
-
     def update_player_position(self):
         """
         Updates the player's position based on their current speed.
@@ -910,8 +918,6 @@ class Game:
             self.player_rect.left = self.MIN_X
         elif self.player_rect.right > self.MAX_X:
             self.player_rect.right = self.MAX_X
-
-
 
     # Start Screen sound
     def load_sound(self):
@@ -960,7 +966,6 @@ class Game:
         self.scream2 = pygame.mixer.Sound("./sounds/scream2.mp3")
         self.scream2.set_volume(0.5)
         
-
     # start game over sound
     def play_game_over_screen_sound(self):
         """
@@ -1128,7 +1133,6 @@ class Game:
         self.player_speed_y = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_y))
         self.player_speed_x = max(self.PLAYER_SPEED_MIN, min(self.PLAYER_SPEED_MAX, self.player_speed_x))
 
-    # Stopping all sounds - Needed to add this as there still was overlapping
     def stop_all_sounds(self):
         """
         Stops all currently playing sounds.
@@ -1139,7 +1143,6 @@ class Game:
         Author: Christian Gerhold
         """
         pygame.mixer.stop()
-
 
     def start_screen(self):
         """
@@ -1253,7 +1256,6 @@ class Game:
             self.display_high_score()
             pygame.display.update()
 
-
     def main_game(self):
         """
         The main game loop handling the core gameplay mechanics.
@@ -1276,7 +1278,6 @@ class Game:
 
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
         self.initialize_behaviour()
-
 
         while True:
             for event in pygame.event.get():
@@ -1412,7 +1413,6 @@ class Game:
                 if bike.rect.right < 0:
                     self.bikes.remove(bike)
 
-
             # Updating the state of the wave - either the wave is on or not
             self.update_state_of_wave()
 
@@ -1431,10 +1431,7 @@ class Game:
                         if random.random() < 0.3:
                             self.spawn_car()
 
-
-
-
-             # We are drawing the trees in the same fashion as the background - 2 times
+            # We are drawing the trees in the same fashion as the background - 2 times
             # But after all other elements to create a layered effect
             for x in range(self.bg_x, self.ACTUAL_SCREEN_WIDTH, self.current_background.get_width()):
                 y = self.ACTUAL_SCREEN_HEIGHT // 8
@@ -1462,7 +1459,6 @@ class Game:
 
             pygame.display.update()
             self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
-
 
     def run(self):
         """
@@ -1571,8 +1567,6 @@ class Bike:
         screen.blit(self.image, self.rect.topleft)
 
 
-
-# Canister Class
 class Canister:
     """
     Class for a canister object.
