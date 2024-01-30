@@ -1172,6 +1172,7 @@ class Game:
                     # Remove collided enemies for next game
                     self.enemies_collided.clear()
                     self.remaining_lives = 3
+                    self.difficulty_increase_counter = 0
 
                     self.stop_start_screen_sound()
                     self.play_vroom()
@@ -1228,6 +1229,7 @@ class Game:
                     # Remove collided enemies for next game
                     self.enemies_collided.clear()
                     self.remaining_lives = 3
+                    self.difficulty_increase_counter = 0
 
                     self.stop_start_screen_sound()
                     self.play_vroom()
