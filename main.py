@@ -39,7 +39,7 @@ Additional Remark 1: The order in which elements are drawn in the main_game() me
 We use this to create a layered effect, in which elements seem to be passing underneath the tree tops.
 
 Additional Remark 2: The order in which the Authors are listed (for each method, or class) has a meaning.
-If there are 2 Authors, the first mentioned worked the most on this section of code (important for oral examination).
+If there are 2 Authors, the first mentioned worked the most on this section of code (important for oral exam).
 
 Want to play?
 We recommend a large screen and a headset or speakers (better than laptop quality speakers) for playing.
@@ -51,10 +51,22 @@ Requires: Pygame library
 """
 
 import sys
+import os
 import random
 import time
 
 import pygame
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 # Initialize Pygame
 pygame.init()
@@ -134,8 +146,8 @@ class Game:
         self.ACTUAL_SCREEN_WIDTH, self.ACTUAL_SCREEN_HEIGHT = info.current_w, info.current_h
 
         # Initialize fonts
-        self.font_timer = pygame.font.Font('fonts/Pixeltype.ttf', self.TIMER_FONT_SIZE)
-        self.font_high_score = pygame.font.Font('fonts/Pixeltype.ttf', self.HIGH_SCORE_FONT_SIZE)
+        self.font_timer = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), self.TIMER_FONT_SIZE)
+        self.font_high_score = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), self.HIGH_SCORE_FONT_SIZE)
 
         # High score (final timer string)
         self.high_score = None
@@ -167,7 +179,7 @@ class Game:
         self.PEDESTRIAN_WIDTH = int(3.5 * self.perc_W)
         self.PEDESTRIAN_HEIGHT = int(3 * self.perc_H)
 
-        # Define minimum and maximum car positions
+        # Define minimum and maximum car positions - invisible barriers, the player can not pass through
         self.MIN_Y = self.ACTUAL_SCREEN_HEIGHT // 8 + int(3 * self.perc_H)
         self.MAX_Y = (self.ACTUAL_SCREEN_HEIGHT // 8) * 7 - int(2 * self.perc_H)
         self.MIN_X = 0
@@ -220,7 +232,9 @@ class Game:
         # Initialize buttons for various screens
         self.start_button = Button(self.SCREEN_WIDTH // 2 + 110, self.SCREEN_HEIGHT // 2 + 180, "START", font_size=90)
         self.quit_button_start_screen = Button(self.SCREEN_WIDTH // 2 - 18, self.SCREEN_HEIGHT // 2 + 60, "Quit", font_size=55)
+
         self.quit_button = Button(50, 30, "Quit", font_size=40)
+
         self.continue_button = Button(self.SCREEN_WIDTH // 2 + 310, self.SCREEN_HEIGHT // 2 + 110, "CONTINUE", font_size=70)
         self.quit_button_game_over_screen = Button(self.SCREEN_WIDTH // 2 - 260, self.SCREEN_HEIGHT // 2 + 110, "QUIT", font_size=60)
 
@@ -230,19 +244,19 @@ class Game:
         # Initialize time for spawning cars
         self.last_spawn_time = pygame.time.get_ticks()
 
-        # Initialize list for collided enemies
+        # Initialize list for collided enemies - for later version of game
         self.enemies_collided = []
 
         # Initialize game clock
         self.clock = pygame.time.Clock()
         
-        # Load game resources
-        self.load_resources()
-
         # Initialize canister variables
         self.remaining_lives = 3
         self.last_canister_spawn_time = 0
         self.canisters = []
+
+        # Load game resources
+        self.load_resources()
 
 
     def load_resources(self):
@@ -260,7 +274,7 @@ class Game:
         self.load_sound()
 
         # Loading Canister image
-        self.canister_image = pygame.image.load("./items/fuel.png").convert_alpha()  # Loading image
+        self.canister_image = pygame.image.load(resource_path("items/fuel.png")).convert_alpha()  # Loading image
         self.canister_image = pygame.transform.scale(self.canister_image, (int(2.5*self.perc_W), int(4.5*self.perc_H))) # Scaling
 
         # Loading background images 
@@ -270,7 +284,7 @@ class Game:
                 # .. rotate ..
                 pygame.transform.rotate(
                     # Load, ..
-                    pygame.image.load(f"backgrounds/day_to_night_transition_long_roads/background_2_day_to_night_{i}.png").convert(),
+                    pygame.image.load(resource_path(f"backgrounds/day_to_night_transition_long_roads/background_2_day_to_night_{i}.png")).convert(),
                     90
                 ),
                 (self.BACKGROUND_WIDTH, self.BACKGROUND_HEIGHT)
@@ -285,7 +299,7 @@ class Game:
                 # .. rotate ..
                 pygame.transform.rotate(
                     # Load, ..
-                    pygame.image.load(f"trees/transparent_background_2_day_to_night_{i}.png").convert_alpha(),
+                    pygame.image.load(resource_path(f"trees/transparent_background_2_day_to_night_{i}.png")).convert_alpha(),
                     90
                 ),
                 (self.BACKGROUND_WIDTH, self.BACKGROUND_HEIGHT)
@@ -304,7 +318,7 @@ class Game:
                 # .. rotate
                 pygame.transform.rotate(
                     # Load, ..
-                    pygame.image.load(f"enemies/enemy{i}.png").convert_alpha(),
+                    pygame.image.load(resource_path(f"enemies/enemy{i}.png")).convert_alpha(),
                     90
                 ),
                 (self.ENEMY_WIDTH_CAR, self.ENEMY_HEIGHT_CAR)
@@ -316,7 +330,7 @@ class Game:
         self.bike_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
-                    pygame.image.load(f"enemies/bike1_animation/bike1_animation_part{i}.png").convert_alpha(),
+                    pygame.image.load(resource_path(f"enemies/bike1_animation/bike1_animation_part{i}.png")).convert_alpha(),
                     90
                 ),
                 (self.BIKE_WIDTH, self.BIKE_HEIGHT)
@@ -328,7 +342,7 @@ class Game:
         self.pedestrian1_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
-                    pygame.image.load(f"enemies/pedestrian1_animation/pedestrian1_{i}.png").convert_alpha(),
+                    pygame.image.load(resource_path(f"enemies/pedestrian1_animation/pedestrian1_{i}.png")).convert_alpha(),
                     90
                 ),
                 (self.PEDESTRIAN_WIDTH, self.PEDESTRIAN_HEIGHT)
@@ -340,7 +354,7 @@ class Game:
         self.pedestrian2_animation_images = [
             pygame.transform.scale(
                 pygame.transform.rotate(
-                    pygame.image.load(f"enemies/pedestrian2_animation/pedestrian2_{i}.png").convert_alpha(),
+                    pygame.image.load(resource_path(f"enemies/pedestrian2_animation/pedestrian2_{i}.png")).convert_alpha(),
                     90
                 ),
                 (self.PEDESTRIAN_WIDTH, self.PEDESTRIAN_HEIGHT)
@@ -348,22 +362,18 @@ class Game:
             for i in range(1, 4)  # 3 pedestrian animation images
         ]  
 
-
-        # self.enemy_image = random.choice(self.enemy_images)
-        # self.enemy_rect = self.enemy_image.get_rect()
-
-        # This is examplorary to understand how the lists enemy_images and transition_images are formed
-        self.player_image = pygame.image.load("car2.png").convert_alpha()  # Loading image
+        # This can be used to examplorarily understand how the lists enemy_images and transition_images are formed
+        self.player_image = pygame.image.load(resource_path("car2.png")).convert_alpha()  # Loading image
         self.player_image = pygame.transform.rotate(self.player_image, 90)  # Rotating
         self.player_image = pygame.transform.scale(self.player_image, (self.PLAYER_WIDTH, self.PLAYER_HEIGHT)) # Scaling
         self.player_rect = self.player_image.get_rect()
 
         # Preparing the start screen image
-        self.start_screen_image = pygame.image.load("start_screen3.png").convert()
+        self.start_screen_image = pygame.image.load(resource_path("start_screen3.png")).convert()
         self.start_screen_image = pygame.transform.scale(self.start_screen_image, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
 
         # Preparing the game over screen image
-        self.game_over_screen_image = pygame.image.load("game_over_screen_image.png").convert()
+        self.game_over_screen_image = pygame.image.load(resource_path("game_over_screen_image.png")).convert()
         self.game_over_screen_image = pygame.transform.scale(self.game_over_screen_image, (self.GAME_OVER_SCREEN_WIDTH, self.GAME_OVER_SCREEN_HEIGHT))
 
     def initialize_behaviour(self):
@@ -431,7 +441,7 @@ class Game:
         scaled_height = int(4.5*self.perc_H)
         distance_left = int(1.5*self.perc_W)
 
-        fuel_image = pygame.image.load("./items/fuel.png").convert_alpha()
+        fuel_image = pygame.image.load(resource_path("./items/fuel.png")).convert_alpha()
         scaled_image = pygame.transform.scale(fuel_image, (scaled_width, scaled_height))
 
         # remaining lives
@@ -562,7 +572,7 @@ class Game:
         The car's vertical position is slightly randomized within the lane limits. The method attempts 
         to spawn the car without causing a collision, up to a maximum number of attempts.
 
-        Author: Florian Goldbach
+        Author: Florian Goldbach, Christian Gerhold
         """
         enemy_image = random.choice(self.enemy_images)
         enemy_rect = enemy_image.get_rect()
@@ -582,10 +592,10 @@ class Game:
     def load_canister_sound(self):
         """
         Loads the canister pickup sound effect and sets its volume.
-
+        
         Author: Christian Gerhold
         """
-        self.canister_sound = pygame.mixer.Sound("./sounds/canister.wav")
+        self.canister_sound = pygame.mixer.Sound(resource_path("./sounds/canister.wav"))
         self.canister_sound.set_volume(0.5)
 
     def play_canister_sound(self):
@@ -604,7 +614,7 @@ class Game:
         Author: Christian Gerhold
         """
         # load bike sound
-        self.bike_sound = pygame.mixer.Sound("./sounds/bike.wav")
+        self.bike_sound = pygame.mixer.Sound(resource_path("./sounds/bike.wav"))
         self.bike_sound.set_volume(0.1)
 
     def play_bike_sound(self):
@@ -622,7 +632,7 @@ class Game:
 
         Author: Christian Gerhold.
         """
-        self.pedestrian_sound = pygame.mixer.Sound("./sounds/walking.wav")
+        self.pedestrian_sound = pygame.mixer.Sound(resource_path("./sounds/walking.wav"))
         self.pedestrian_sound.set_volume(0.2)
 
     def play_pedestrian_sound(self):
@@ -851,15 +861,14 @@ class Game:
         elapsed_time = pygame.time.get_ticks() - self.start_time
 
         # After "HIGH_NOON_TIME" milliseconds of daytime driving, we start the transition
-        # We give elapsed_time a window due to the inprecision of .get_ticks()
-        if self.HIGH_NOON_TIME <= elapsed_time < self.HIGH_NOON_TIME + 6000 and self.transition_start_time is None:
+        if self.HIGH_NOON_TIME <= elapsed_time and self.transition_start_time is None:
             self.transition_start_time = pygame.time.get_ticks()
 
         # We keep track of when the transition started
         if self.transition_start_time:
             time_since_transition_start = pygame.time.get_ticks() - self.transition_start_time
 
-            # While we are not in a reverse transition (night to day), we change the background image every 5 seconds
+            # While we are not in a reverse transition (night to day), we change the background image every TRANSITION_SPEED miliseconds
             if not self.reverse_transition:
                 transition_index = time_since_transition_start // self.TRANSITION_SPEED  # e.g. every 5 seconds: time_since_transition_start // 5000
 
@@ -900,7 +909,6 @@ class Game:
 
         Authors: Christian Gerhold, Florian Goldbach
         """
-
         # Movement of player based on speed (y-axis)
         self.player_rect.centery += self.player_speed_y
 
@@ -931,39 +939,39 @@ class Game:
         Author: Christian Gerhold, Florian Goldbach
         """
         # load game over screen sound
-        self.game_over_screen_sound = pygame.mixer.Sound("./sounds/game_over.wav")
+        self.game_over_screen_sound = pygame.mixer.Sound(resource_path("./sounds/game_over.wav"))
         self.game_over_screen_sound.set_volume(1)
 
         # load start screen sound
-        self.start_screen_sound = pygame.mixer.Sound("./sounds/start_screen.wav")
+        self.start_screen_sound = pygame.mixer.Sound(resource_path("./sounds/start_screen.wav"))
         self.start_screen_sound.set_volume(0.2)
 
         # load start button sound
-        self.start_button_sound = pygame.mixer.Sound("./sounds/button_start_sound.wav")
+        self.start_button_sound = pygame.mixer.Sound(resource_path("./sounds/button_start_sound.wav"))
         self.start_button_sound.set_volume(0.5)
 
         # load quit button sound
-        self.quit_button_sound = pygame.mixer.Sound("./sounds/button_quit_sound.wav")
+        self.quit_button_sound = pygame.mixer.Sound(resource_path("./sounds/button_quit_sound.wav"))
         self.quit_button_sound.set_volume(0.5)
 
         # load soundtrack file
-        self.soundtrack = pygame.mixer.Sound("./sounds/soundtrack.wav")
+        self.soundtrack = pygame.mixer.Sound(resource_path("./sounds/soundtrack.wav"))
         self.soundtrack.set_volume(0.3)
 
         # load collision file
-        self.collision = pygame.mixer.Sound("./sounds/collision.wav")
+        self.collision = pygame.mixer.Sound(resource_path("./sounds/collision.wav"))
         self.collision.set_volume(0.5)
 
         # load vroom file
-        self.vroom = pygame.mixer.Sound("./sounds/vroom.wav")
+        self.vroom = pygame.mixer.Sound(resource_path("./sounds/vroom.wav"))
         self.vroom.set_volume(0.5)
 
         # load scream for pedestrian when being hit
-        self.scream = pygame.mixer.Sound("./sounds/scream.wav")
+        self.scream = pygame.mixer.Sound(resource_path("./sounds/scream.wav"))
         self.scream.set_volume(0.5)
 
         # load scream for pedestrian when being hit
-        self.scream2 = pygame.mixer.Sound("./sounds/scream2.mp3")
+        self.scream2 = pygame.mixer.Sound(resource_path("./sounds/scream2.mp3"))
         self.scream2.set_volume(0.5)
         
     # start game over sound
@@ -997,7 +1005,7 @@ class Game:
 
         Author: Ghristian Gerhold
         """
-        # Stoppt den Sound auf Kanal 3 (der Soundtrack-Kanal)
+        # Stoppt den Sound (der Soundtrack-Kanal)
         self.soundtrack.stop() # hier gab es Überlagerungen
 
     # start_screen sound play
@@ -1173,6 +1181,9 @@ class Game:
                     self.enemies_collided.clear()
                     self.remaining_lives = 3
                     self.difficulty_increase_counter = 0
+                    self.car_spawn_time = 3000
+                    self.bike_spawn_time = 10000
+                    self.pedestrian_spawn_time = 6000
 
                     self.stop_start_screen_sound()
                     self.play_vroom()
@@ -1186,7 +1197,7 @@ class Game:
                     return
                 # The window will be closed when the quit button is pressed
                 if self.quit_button_start_screen.is_clicked(event):
-                    self.play_quit_button_sound() # Aufruf des start button sounds
+                    self.play_quit_button_sound() # Aufruf des quit button sounds
 
                     ### delay damit der sound abgespielt wird bevor das fenster schließt
                     time.sleep(1)
@@ -1230,6 +1241,9 @@ class Game:
                     self.enemies_collided.clear()
                     self.remaining_lives = 3
                     self.difficulty_increase_counter = 0
+                    self.car_spawn_time = 3000
+                    self.bike_spawn_time = 10000
+                    self.pedestrian_spawn_time = 6000
 
                     self.stop_start_screen_sound()
                     self.play_vroom()
@@ -1277,6 +1291,8 @@ class Game:
         Author: Florian Goldbach, Christian Gerhold
         """
         self.play_soundtrack()  # Aufruf des soundtracks
+
+
 
         # We need to re-/initialize the behaviour of all game objects, before starting/restarting the game
         self.initialize_behaviour()
@@ -1460,7 +1476,7 @@ class Game:
             self.display_timer()
 
             pygame.display.update()
-            self.clock.tick(120) #Geschwindigkeit des Spiels generell (kann verändert werden, um das Spiel schwieriger zu machen
+            self.clock.tick(120) 
 
     def run(self):
         """
@@ -1594,7 +1610,7 @@ class Canister:
         draw(screen): Draws the canister on the given screen (pygame.Surface).
     
     Author:
-        Florian Goldbach
+        Florian Goldbach, Christian Gerhold
     """
     def __init__(self, x, y, speed, image):
         self.x = x
@@ -1645,7 +1661,7 @@ class Button:
     """
     def __init__(self, x, y, text, font_size=80, 
                  font_color=(0, 0, 0), hover_color=(255, 255, 255)):
-        self.font = pygame.font.Font('fonts/Pixeltype.ttf', font_size)
+        self.font = pygame.font.Font(resource_path('fonts/Pixeltype.ttf'), font_size)
         self.text = text
         self.colors = {'default': font_color, 'hover': hover_color}
         self.current_color = 'default'
