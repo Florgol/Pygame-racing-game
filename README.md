@@ -5,4 +5,4 @@ This is a collaborative project between 2 students.
 
 The resulting codebase is rough around the edges, as there is opportunity for efficiency optimizations and refactoring. Given more time, this would have been a priority.
 
-Feel free play the resulting game. You can do so by simply downloading and executing the main.exe file.
+Feel free to play the resulting game. You can do so by simply downloading and executing the main.exe file.
