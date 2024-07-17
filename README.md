@@ -1,5 +1,5 @@
 # Pygame Racing Game
-This game is the final project of the module 'Objektorientierte Skriptsprachen' (Object-oriented scripting languages), offered by the BHT (Berliner Hochschule für Technik).
+This game is the final project of the module 'Objektorientierte Skriptsprachen' (Object-oriented scripting languages), at BHT (Berliner Hochschule für Technik).
 The objective for this project was to explore the Python programming language and the Pygame framework.
 This is a collaborative project between 2 students.
 
