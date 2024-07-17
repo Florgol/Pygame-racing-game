@@ -5,4 +5,7 @@ This is a collaborative project between 2 students.
 
 The resulting codebase is rough around the edges, as there is opportunity for efficiency optimizations and refactoring. Given more time, this would have been a priority.
 
-You can play the game by downloading and executing the 'main.exe' file (~67MB) in the 'dist' folder.
+[Download the latest version of the game](https://github.com/Florgol/Pygame-racing-game/releases/download/v1.0/HighwayFrenzy.exe)
+
+
+
